@@ -86,6 +86,21 @@ class CollectionViewModel(
 
     fun getPhotoFile(relativePath: String): java.io.File = repository.getPhotoFile(relativePath)
 
+    /**
+     * Returns a Coil-loadable model for a GuitarPhoto.
+     * - Base64 photos → data URI string
+     * - File photos → File object
+     */
+    fun getPhotoModel(photo: com.guitarvault.app.data.model.GuitarPhoto?): Any? {
+        if (photo == null) return null
+        photo.toDataUri()?.let { return it }
+        if (photo.filePath.isNotBlank()) {
+            val file = getPhotoFile(photo.filePath)
+            if (file.exists()) return file
+        }
+        return null
+    }
+
     fun createPhotoFile(prefix: String = "photo"): java.io.File = repository.createPhotoFile(prefix)
 
     fun addPhotoToGuitar(guitarId: String, photo: GuitarPhoto) = viewModelScope.launch {

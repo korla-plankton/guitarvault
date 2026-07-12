@@ -135,9 +135,7 @@ fun CollectionScreen(
                             items(guitars, key = { it.id }) { guitar ->
                                 GuitarCard(
                                     guitar = guitar,
-                                    photoFile = guitar.primaryPhoto?.let {
-                                        viewModel.getPhotoFile(it.filePath)
-                                    },
+                                    photoModel = viewModel.getPhotoModel(guitar.primaryPhoto),
                                     onClick = { onGuitarClick(guitar.id) }
                                 )
                             }
@@ -162,9 +160,7 @@ fun CollectionScreen(
                                 items(brandGuitars, key = { it.id }) { guitar ->
                                     GuitarCard(
                                         guitar = guitar,
-                                        photoFile = guitar.primaryPhoto?.let {
-                                            viewModel.getPhotoFile(it.filePath)
-                                        },
+                                        photoModel = viewModel.getPhotoModel(guitar.primaryPhoto),
                                         onClick = { onGuitarClick(guitar.id) }
                                     )
                                 }
@@ -181,9 +177,7 @@ fun CollectionScreen(
                             gridItems(guitars, key = { it.id }) { guitar ->
                                 GuitarGridItem(
                                     guitar = guitar,
-                                    photoFile = guitar.primaryPhoto?.let {
-                                        viewModel.getPhotoFile(it.filePath)
-                                    },
+                                    photoModel = viewModel.getPhotoModel(guitar.primaryPhoto),
                                     onClick = { onGuitarClick(guitar.id) }
                                 )
                             }

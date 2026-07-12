@@ -84,10 +84,10 @@ fun GuitarDetailScreen(
         Column(modifier = Modifier.padding(padding)) {
             // Hero photo
             guitar.primaryPhoto?.let { photo ->
-                val file = viewModel.getPhotoFile(photo.filePath)
-                if (file.exists()) {
+                val photoModel = viewModel.getPhotoModel(photo)
+                if (photoModel != null) {
                     AsyncImage(
-                        model = file,
+                        model = photoModel,
                         contentDescription = guitar.displayName,
                         contentScale = ContentScale.Fit,
                         modifier = Modifier
@@ -180,7 +180,7 @@ fun GuitarDetailScreen(
             FullScreenPhotoViewer(
                 photos = guitar.photos,
                 initialIndex = index,
-                photoFileProvider = { path -> viewModel.getPhotoFile(path) },
+                photoModelProvider = { photo -> viewModel.getPhotoModel(photo) },
                 onClose = { fullscreenPhotoIndex = null }
             )
         }
@@ -194,11 +194,32 @@ private fun PhotosTab(
     onOpenCamera: () -> Unit,
     onPhotoClick: (Int) -> Unit
 ) {
+    val context = androidx.compose.ui.platform.LocalContext.current
+    var pasteStatus by remember { mutableStateOf<String?>(null) }
+
     Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
+        pasteStatus?.let {
+            Text(it, style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(bottom = 8.dp))
+        }
         PhotoGallery(
             photos = guitar.photos,
-            photoFileProvider = { path -> viewModel.getPhotoFile(path) },
+            photoModelProvider = { photo -> viewModel.getPhotoModel(photo) },
             onAddPhoto = onOpenCamera,
+            onPastePhoto = {
+                val base64 = com.guitarvault.app.util.ClipboardImageReader.readImageAsBase64(context)
+                if (base64 != null) {
+                    viewModel.addPhotoToGuitar(guitar.id, GuitarPhoto(
+                        base64Data = base64,
+                        photoType = com.guitarvault.app.data.model.PhotoType.GENERAL,
+                        isPrimary = guitar.photos.isEmpty()
+                    ))
+                    pasteStatus = "✅ Photo pasted from clipboard"
+                } else {
+                    pasteStatus = "❌ No image found on clipboard. Copy an image first."
+                }
+            },
             onRemovePhoto = { photo ->
                 viewModel.removePhotoFromGuitar(guitar.id, photo.id)
             },

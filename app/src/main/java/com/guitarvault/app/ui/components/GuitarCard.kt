@@ -14,7 +14,6 @@ import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.guitarvault.app.data.model.Guitar
 import com.guitarvault.app.data.model.ConditionRating
-import java.io.File
 import java.text.NumberFormat
 import java.util.Locale
 
@@ -24,7 +23,7 @@ import java.util.Locale
 @Composable
 fun GuitarCard(
     guitar: Guitar,
-    photoFile: File?,
+    photoModel: Any?,
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -35,9 +34,9 @@ fun GuitarCard(
     ) {
         Row(modifier = Modifier.padding(12.dp)) {
             // Photo thumbnail
-            if (photoFile != null && photoFile.exists()) {
+            if (photoModel != null) {
                 AsyncImage(
-                    model = photoFile,
+                    model = photoModel,
                     contentDescription = "Photo of ${guitar.displayName}",
                     contentScale = ContentScale.Crop,
                     modifier = Modifier
@@ -107,7 +106,7 @@ fun GuitarCard(
 @Composable
 fun GuitarGridItem(
     guitar: Guitar,
-    photoFile: File?,
+    photoModel: Any?,
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -117,9 +116,9 @@ fun GuitarGridItem(
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Column {
-            if (photoFile != null && photoFile.exists()) {
+            if (photoModel != null) {
                 AsyncImage(
-                    model = photoFile,
+                    model = photoModel,
                     contentDescription = guitar.displayName,
                     contentScale = ContentScale.Crop,
                     modifier = Modifier.fillMaxWidth().height(140.dp)

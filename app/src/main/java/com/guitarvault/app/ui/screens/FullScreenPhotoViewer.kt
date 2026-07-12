@@ -19,7 +19,6 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.guitarvault.app.data.model.GuitarPhoto
-import java.io.File
 
 /**
  * Full-screen photo viewer with pinch-to-zoom, pan, and swipe between photos.
@@ -29,7 +28,7 @@ import java.io.File
 fun FullScreenPhotoViewer(
     photos: List<GuitarPhoto>,
     initialIndex: Int,
-    photoFileProvider: (String) -> File,
+    photoModelProvider: (GuitarPhoto) -> Any?,
     onClose: () -> Unit
 ) {
     if (photos.isEmpty()) { onClose(); return }
@@ -46,7 +45,7 @@ fun FullScreenPhotoViewer(
             modifier = Modifier.fillMaxSize()
         ) { page ->
             val photo = photos[page]
-            val file = photoFileProvider(photo.filePath)
+            val model = photoModelProvider(photo)
 
             // Each page has its own zoom/pan state
             var scale by remember(page) { mutableFloatStateOf(1f) }
@@ -54,7 +53,7 @@ fun FullScreenPhotoViewer(
             var offsetY by remember(page) { mutableFloatStateOf(0f) }
 
             AsyncImage(
-                model = file,
+                model = model,
                 contentDescription = photo.caption.ifEmpty { photo.photoType.displayName },
                 contentScale = ContentScale.Fit,
                 modifier = Modifier

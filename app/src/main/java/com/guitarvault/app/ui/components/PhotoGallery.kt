@@ -25,7 +25,6 @@ import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.guitarvault.app.data.model.GuitarPhoto
 import com.guitarvault.app.data.model.PhotoType
-import java.io.File
 
 /**
  * Horizontal scrolling photo gallery with add/remove capabilities.
@@ -33,8 +32,9 @@ import java.io.File
 @Composable
 fun PhotoGallery(
     photos: List<GuitarPhoto>,
-    photoFileProvider: (String) -> File,
+    photoModelProvider: (GuitarPhoto) -> Any?,
     onAddPhoto: () -> Unit,
+    onPastePhoto: () -> Unit,
     onRemovePhoto: (GuitarPhoto) -> Unit,
     onSetPrimary: (GuitarPhoto) -> Unit,
     onPhotoClick: (GuitarPhoto) -> Unit,
@@ -48,7 +48,7 @@ fun PhotoGallery(
         items(photos, key = { it.id }) { photo ->
             PhotoThumbnail(
                 photo = photo,
-                file = photoFileProvider(photo.filePath),
+                model = photoModelProvider(photo),
                 onRemove = { onRemovePhoto(photo) },
                 onSetPrimary = { onSetPrimary(photo) },
                 onClick = { onPhotoClick(photo) }
@@ -57,13 +57,16 @@ fun PhotoGallery(
         item {
             AddPhotoButton(onClick = onAddPhoto)
         }
+        item {
+            PastePhotoButton(onClick = onPastePhoto)
+        }
     }
 }
 
 @Composable
 private fun PhotoThumbnail(
     photo: GuitarPhoto,
-    file: File,
+    model: Any?,
     onRemove: () -> Unit,
     onSetPrimary: () -> Unit,
     onClick: () -> Unit
@@ -75,9 +78,9 @@ private fun PhotoThumbnail(
             .background(MaterialTheme.colorScheme.surfaceVariant)
             .clickable(onClick = onClick)
     ) {
-        if (file.exists()) {
+        if (model != null) {
             AsyncImage(
-                model = file,
+                model = model,
                 contentDescription = photo.caption.ifEmpty { photo.photoType.displayName },
                 contentScale = ContentScale.Crop,
                 modifier = Modifier.fillMaxSize()
@@ -179,6 +182,25 @@ private fun AddPhotoButton(onClick: () -> Unit) {
                 Icon(Icons.Default.Add, contentDescription = "Add photo")
                 Spacer(modifier = Modifier.height(4.dp))
                 Text("Add Photo", style = MaterialTheme.typography.labelSmall)
+            }
+        }
+    }
+}
+
+@Composable
+private fun PastePhotoButton(onClick: () -> Unit) {
+    Card(
+        onClick = onClick,
+        modifier = Modifier.size(120.dp, 140.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant
+        )
+    ) {
+        Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Icon(Icons.Default.Add, contentDescription = "Paste photo")
+                Spacer(modifier = Modifier.height(4.dp))
+                Text("Paste Photo", style = MaterialTheme.typography.labelSmall)
             }
         }
     }
