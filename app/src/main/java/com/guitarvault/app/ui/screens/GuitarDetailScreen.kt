@@ -196,6 +196,7 @@ private fun PhotosTab(
 ) {
     val context = androidx.compose.ui.platform.LocalContext.current
     var pasteStatus by remember { mutableStateOf<String?>(null) }
+    val bgProgress by viewModel.bgRemovalProgress.collectAsState()
 
     Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
         pasteStatus?.let {
@@ -226,6 +227,16 @@ private fun PhotosTab(
             onSetPrimary = { photo ->
                 viewModel.setPrimaryPhoto(guitar.id, photo.id)
             },
+            onRemoveBackground = { photo ->
+                viewModel.removeBackgroundFromPhoto(guitar.id, photo.id) { success, message ->
+                    pasteStatus = if (success) "✅ $message" else "❌ $message"
+                }
+            },
+            onUndoBackgroundRemoval = { photo ->
+                viewModel.undoBackgroundRemoval(guitar.id, photo.id)
+                pasteStatus = "↩️ Background removal undone"
+            },
+            bgRemovalProgress = bgProgress,
             onPhotoClick = { photo ->
                 val index = guitar.photos.indexOfFirst { it.id == photo.id }
                 if (index >= 0) onPhotoClick(index)

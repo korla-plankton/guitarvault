@@ -88,12 +88,18 @@ class CollectionViewModel(
 
     /**
      * Returns a Coil-loadable model for a GuitarPhoto.
-     * - Base64 photos → data URI string
+     * - Base64 photos → decoded ByteArray (Coil supports ByteArray natively)
      * - File photos → File object
      */
     fun getPhotoModel(photo: com.guitarvault.app.data.model.GuitarPhoto?): Any? {
         if (photo == null) return null
-        photo.toDataUri()?.let { return it }
+        if (photo.base64Data.isNotEmpty()) {
+            return try {
+                android.util.Base64.decode(photo.base64Data, android.util.Base64.NO_WRAP)
+            } catch (e: Exception) {
+                null
+            }
+        }
         if (photo.filePath.isNotBlank()) {
             val file = getPhotoFile(photo.filePath)
             if (file.exists()) return file
@@ -102,6 +108,114 @@ class CollectionViewModel(
     }
 
     fun createPhotoFile(prefix: String = "photo"): java.io.File = repository.createPhotoFile(prefix)
+
+    // ── Background Removal ────────────────────────────────────────
+
+    private val _bgRemovalProgress = MutableStateFlow<Map<String, String>>(emptyMap())
+    val bgRemovalProgress: StateFlow<Map<String, String>> = _bgRemovalProgress.asStateFlow()
+
+    fun removeBackgroundFromPhoto(
+        guitarId: String,
+        photoId: String,
+        onResult: (Boolean, String) -> Unit
+    ) = viewModelScope.launch {
+        val guitar = getGuitarById(guitarId) ?: run {
+            onResult(false, "Guitar not found"); return@launch
+        }
+        val photo = guitar.photos.find { it.id == photoId } ?: run {
+            onResult(false, "Photo not found"); return@launch
+        }
+
+        _bgRemovalProgress.value = _bgRemovalProgress.value + (photoId to "Processing...")
+
+        try {
+            // Get the current image as a bitmap
+            val bitmap = getPhotoBitmap(photo) ?: run {
+                _bgRemovalProgress.value = _bgRemovalProgress.value - photoId
+                onResult(false, "Could not load image"); return@launch
+            }
+
+            // Run ML Kit segmentation
+            val remover = com.guitarvault.app.ai.MlKitBackgroundRemover.getInstance(getApplication())
+            _bgRemovalProgress.value = _bgRemovalProgress.value + (photoId to "AI processing...")
+
+            val result = remover.removeBackground(bitmap) { progress ->
+                _bgRemovalProgress.value = _bgRemovalProgress.value + (photoId to progress)
+            }
+
+            when (result) {
+                is com.guitarvault.app.ai.BackgroundRemovalResult.Success -> {
+                    // Convert result bitmap to base64
+                    val outputStream = java.io.ByteArrayOutputStream()
+                    result.bitmap.compress(android.graphics.Bitmap.CompressFormat.PNG, 100, outputStream)
+                    val newBase64 = android.util.Base64.encodeToString(outputStream.toByteArray(), android.util.Base64.NO_WRAP)
+
+                    // Save original for undo, replace with processed
+                    val updatedPhoto = if (photo.isBase64) {
+                        photo.copy(
+                            originalBase64Data = photo.base64Data,
+                            base64Data = newBase64,
+                            backgroundRemoved = true
+                        )
+                    } else {
+                        // File-based photo — convert to base64 for the processed version
+                        photo.copy(
+                            originalFilePath = photo.filePath,
+                            base64Data = newBase64,
+                            backgroundRemoved = true
+                        )
+                    }
+                    repository.updatePhoto(guitarId, updatedPhoto)
+                    _bgRemovalProgress.value = _bgRemovalProgress.value - photoId
+                    onResult(true, "Background removed")
+                }
+                is com.guitarvault.app.ai.BackgroundRemovalResult.Error -> {
+                    _bgRemovalProgress.value = _bgRemovalProgress.value - photoId
+                    onResult(false, result.message)
+                }
+            }
+        } catch (e: Exception) {
+            _bgRemovalProgress.value = _bgRemovalProgress.value - photoId
+            onResult(false, e.message ?: "Unknown error")
+        }
+    }
+
+    fun undoBackgroundRemoval(guitarId: String, photoId: String) = viewModelScope.launch {
+        val guitar = getGuitarById(guitarId) ?: return@launch
+        val photo = guitar.photos.find { it.id == photoId } ?: return@launch
+
+        val restoredPhoto = if (photo.originalBase64Data.isNotEmpty()) {
+            photo.copy(
+                base64Data = photo.originalBase64Data,
+                originalBase64Data = "",
+                backgroundRemoved = false
+            )
+        } else if (photo.originalFilePath != null) {
+            photo.copy(
+                filePath = photo.originalFilePath!!,
+                originalFilePath = null,
+                base64Data = "",
+                backgroundRemoved = false
+            )
+        } else return@launch
+
+        repository.updatePhoto(guitarId, restoredPhoto)
+    }
+
+    /** Helper to get a Bitmap from either base64 or file photo. */
+    private fun getPhotoBitmap(photo: GuitarPhoto): android.graphics.Bitmap? {
+        if (photo.base64Data.isNotEmpty()) {
+            return try {
+                val bytes = android.util.Base64.decode(photo.base64Data, android.util.Base64.NO_WRAP)
+                android.graphics.BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
+            } catch (e: Exception) { null }
+        }
+        if (photo.filePath.isNotBlank()) {
+            val file = getPhotoFile(photo.filePath)
+            if (file.exists()) return android.graphics.BitmapFactory.decodeFile(file.absolutePath)
+        }
+        return null
+    }
 
     fun addPhotoToGuitar(guitarId: String, photo: GuitarPhoto) = viewModelScope.launch {
         repository.addPhoto(guitarId, photo)

@@ -134,7 +134,7 @@ fun CameraScreen(
                                             "photos/photo_${System.currentTimeMillis()}.png"
                                         ).also { it.parentFile?.mkdirs() }
 
-                                        val result = cameraManager.captureAndRemoveBackground(
+                                        val result = cameraManager.capturePhoto(
                                             outputFile = outputFile
                                         ) { progress -> captureStatus = progress }
 

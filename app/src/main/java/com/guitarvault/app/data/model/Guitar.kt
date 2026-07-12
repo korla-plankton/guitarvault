@@ -11,7 +11,8 @@ data class GuitarPhoto(
     val id: String = UUID.randomUUID().toString(),
     val filePath: String = "",           // relative path under app filesDir/photos/; empty if base64 only
     val base64Data: String = "",         // base64-encoded image data (for pasted/placeholder photos)
-    val originalFilePath: String? = null,  // original before background removal; null if none
+    val originalBase64Data: String = "", // base64 of original before background removal (for undo)
+    val originalFilePath: String? = null,  // original file path before background removal; null if none
     val backgroundRemoved: Boolean = false,
     val caption: String = "",
     val isPrimary: Boolean = false,
@@ -20,14 +21,6 @@ data class GuitarPhoto(
 ) {
     /** Whether this photo is stored as base64 data (no file on disk). */
     val isBase64: Boolean get() = base64Data.isNotEmpty()
-
-    /** Returns a data URI string suitable for Coil's AsyncImage, or null if file-based. */
-    fun toDataUri(): String? {
-        if (base64Data.isEmpty()) return null
-        // Detect format from first bytes of base64 — default to PNG
-        val mime = if (base64Data.startsWith("/9j/")) "image/jpeg" else "image/png"
-        return "data:$mime;base64,$base64Data"
-    }
 }
 
 @Serializable

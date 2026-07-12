@@ -76,10 +76,10 @@ class CameraCaptureManager(
     }
 
     /**
-     * Capture a photo, then run AI background removal in an isolated process.
-     * If the isolated process crashes, falls back to the original photo.
+     * Capture a photo and save it (no auto background removal).
+     * Background removal is now a manual action via the magic wand button.
      */
-    suspend fun captureAndRemoveBackground(
+    suspend fun capturePhoto(
         outputFile: File,
         onProgress: ((String) -> Unit)? = null
     ): CaptureResult {
@@ -87,7 +87,7 @@ class CameraCaptureManager(
         val tempFile = File(context.cacheDir, "capture_${System.currentTimeMillis()}.jpg")
 
         // Step 1: Capture photo with CameraX
-        val captureSuccess = capturePhoto(tempFile)
+        val captureSuccess = capturePhotoInternal(tempFile)
         if (!captureSuccess) {
             return CaptureResult.Error("Failed to capture photo")
         }
@@ -96,71 +96,21 @@ class CameraCaptureManager(
         val bitmap = BitmapFactory.decodeFile(tempFile.absolutePath)
             ?: return CaptureResult.Error("Failed to decode captured image")
 
-        // Step 3: Save original first (as fallback)
+        // Step 3: Save to output file
         withContext(Dispatchers.IO) {
             outputFile.outputStream().use { out ->
                 bitmap.compress(Bitmap.CompressFormat.PNG, 100, out)
             }
         }
 
-        // Step 4: Try background removal in isolated process
-        onProgress?.invoke("AI: Detecting guitar subject...")
-
-        val segInputFile = File(context.cacheDir, "seg_input_${System.currentTimeMillis()}.jpg")
-        val segOutputFile = File(context.cacheDir, "seg_output_${System.currentTimeMillis()}.png")
-
-        withContext(Dispatchers.IO) {
-            segInputFile.outputStream().use { out ->
-                bitmap.compress(Bitmap.CompressFormat.JPEG, 95, out)
-            }
-        }
-
-        // Start the isolated service
-        val serviceIntent = Intent(context, SegmentationIsolatedService::class.java).apply {
-            putExtra(SegmentationIsolatedService.EXTRA_INPUT_PATH, segInputFile.absolutePath)
-            putExtra(SegmentationIsolatedService.EXTRA_OUTPUT_PATH, segOutputFile.absolutePath)
-        }
-        ContextCompat.startForegroundService(context, serviceIntent)
-
-        // Wait for output file (with timeout)
-        var bgRemoved = false
-        val maxWaitMs = 35_000L
-        val checkIntervalMs = 500L
-        var waited = 0L
-
-        withContext(Dispatchers.IO) {
-            while (waited < maxWaitMs) {
-                if (segOutputFile.exists() && segOutputFile.length() > 0) {
-                    // Success! Replace output with the background-removed version
-                    segOutputFile.copyTo(outputFile, overwrite = true)
-                    bgRemoved = true
-                    onProgress?.invoke("Done! Background removed.")
-                    break
-                }
-                delay(checkIntervalMs)
-                waited += checkIntervalMs
-
-                // Check if the segmentation process is still alive
-                // If it crashed, the output file will never appear
-                if (waited % 5000 == 0L) {
-                    onProgress?.invoke("Processing AI... (${waited / 1000}s)")
-                }
-            }
-        }
-
-        // Cleanup temp files
-        segInputFile.delete()
-        segOutputFile.delete()
+        // Cleanup temp
         tempFile.delete()
 
-        if (!bgRemoved) {
-            onProgress?.invoke("Saved (AI unavailable — original kept)")
-            Log.w(TAG, "Background removal did not complete, using original photo")
-        }
+        onProgress?.invoke("Done!")
 
         return CaptureResult.Success(
             file = outputFile,
-            backgroundRemoved = bgRemoved,
+            backgroundRemoved = false,
             bitmap = bitmap
         )
     }
@@ -203,7 +153,7 @@ class CameraCaptureManager(
         )
     }
 
-    private suspend fun capturePhoto(targetFile: File): Boolean {
+    private suspend fun capturePhotoInternal(targetFile: File): Boolean {
         return suspendCancellableCoroutine { cont ->
             val outputOptions = ImageCapture.OutputFileOptions.Builder(targetFile).build()
             imageCapture.takePicture(

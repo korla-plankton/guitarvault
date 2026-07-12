@@ -8,8 +8,10 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.AutoFixHigh
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.filled.Undo
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -38,6 +40,9 @@ fun PhotoGallery(
     onRemovePhoto: (GuitarPhoto) -> Unit,
     onSetPrimary: (GuitarPhoto) -> Unit,
     onPhotoClick: (GuitarPhoto) -> Unit,
+    onRemoveBackground: (GuitarPhoto) -> Unit = {},
+    onUndoBackgroundRemoval: (GuitarPhoto) -> Unit = {},
+    bgRemovalProgress: Map<String, String> = emptyMap(),
     modifier: Modifier = Modifier
 ) {
     LazyRow(
@@ -49,9 +54,12 @@ fun PhotoGallery(
             PhotoThumbnail(
                 photo = photo,
                 model = photoModelProvider(photo),
+                bgProgress = bgRemovalProgress[photo.id],
                 onRemove = { onRemovePhoto(photo) },
                 onSetPrimary = { onSetPrimary(photo) },
-                onClick = { onPhotoClick(photo) }
+                onClick = { onPhotoClick(photo) },
+                onRemoveBackground = { onRemoveBackground(photo) },
+                onUndoBackgroundRemoval = { onUndoBackgroundRemoval(photo) }
             )
         }
         item {
@@ -67,9 +75,12 @@ fun PhotoGallery(
 private fun PhotoThumbnail(
     photo: GuitarPhoto,
     model: Any?,
+    bgProgress: String? = null,
     onRemove: () -> Unit,
     onSetPrimary: () -> Unit,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    onRemoveBackground: () -> Unit = {},
+    onUndoBackgroundRemoval: () -> Unit = {}
 ) {
     Box(
         modifier = Modifier
@@ -94,31 +105,80 @@ private fun PhotoThumbnail(
             }
         }
 
-        // Top row: primary star + remove button
-        Row(
-            modifier = Modifier
-                .align(Alignment.TopStart)
-                .padding(4.dp),
-            horizontalArrangement = Arrangement.spacedBy(2.dp)
-        ) {
-            if (photo.isPrimary) {
-                Icon(
-                    Icons.Default.Star,
-                    contentDescription = "Primary photo",
-                    tint = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.size(16.dp)
-                )
+        // Processing overlay
+        if (bgProgress != null) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color.Black.copy(alpha = 0.6f)),
+                contentAlignment = Alignment.Center
+            ) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(24.dp),
+                        strokeWidth = 2.dp,
+                        color = Color.White
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = bgProgress,
+                        style = MaterialTheme.typography.labelSmall,
+                        color = Color.White,
+                        maxLines = 1
+                    )
+                }
             }
         }
+
+        // Top-left: magic wand (remove bg) or undo button
+        if (bgProgress == null) {
+            if (photo.backgroundRemoved) {
+                // Show undo button
+                IconButton(
+                    onClick = onUndoBackgroundRemoval,
+                    modifier = Modifier
+                        .align(Alignment.TopStart)
+                        .size(24.dp)
+                        .background(Color.Black.copy(alpha = 0.5f), RoundedCornerShape(4.dp))
+                ) {
+                    Icon(
+                        Icons.Default.Undo,
+                        contentDescription = "Undo background removal",
+                        tint = Color.White,
+                        modifier = Modifier.size(16.dp)
+                    )
+                }
+            } else {
+                // Show magic wand button
+                IconButton(
+                    onClick = onRemoveBackground,
+                    modifier = Modifier
+                        .align(Alignment.TopStart)
+                        .size(24.dp)
+                        .background(Color.Black.copy(alpha = 0.5f), RoundedCornerShape(4.dp))
+                ) {
+                    Icon(
+                        Icons.Default.AutoFixHigh,
+                        contentDescription = "Remove background",
+                        tint = Color.White,
+                        modifier = Modifier.size(16.dp)
+                    )
+                }
+            }
+        }
+
+        // Top-right: remove button
         IconButton(
             onClick = onRemove,
             modifier = Modifier
                 .align(Alignment.TopEnd)
                 .size(24.dp)
+                .background(Color.Black.copy(alpha = 0.5f), RoundedCornerShape(4.dp))
         ) {
             Icon(
                 Icons.Default.Close,
                 contentDescription = "Remove photo",
+                tint = Color.White,
                 modifier = Modifier.size(16.dp)
             )
         }
