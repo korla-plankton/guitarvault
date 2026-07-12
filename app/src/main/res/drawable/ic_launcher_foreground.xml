@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- Stylized guitar body -->
+    <path
+        android:fillColor="#FFD700"
+        android:pathData="M54,30 C44,30 38,38 38,48 C38,54 41,59 45,62 L45,72 C45,75 47,77 50,77 L58,77 C61,77 63,75 63,72 L63,62 C67,59 70,54 70,48 C70,38 64,30 54,30 Z" />
+    <!-- Neck -->
+    <path
+        android:fillColor="#FFD700"
+        android:pathData="M52,77 L52,92 L56,92 L56,77 Z" />
+    <!-- Sound hole -->
+    <path
+        android:fillColor="#8B4513"
+        android:pathData="M54,48 m-6,0 a6,6 0 1,0 12,0 a6,6 0 1,0 -12,0" />
+</vector>
