@@ -1,12 +1,11 @@
 package com.guitarvault.app.ui.components
 
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.GridView
-import androidx.compose.material.icons.filled.List
-import androidx.compose.material.icons.filled.ViewAgenda
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.size
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
 import com.guitarvault.app.ui.viewmodel.CollectionViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -22,14 +21,14 @@ fun ViewToggle(
                 selected = selected == mode,
                 onClick = { onSelected(mode) },
                 shape = SegmentedButtonDefaults.itemShape(index = index, count = 3),
-                icon = {
-                    when (mode) {
-                        CollectionViewModel.CollectionViewMode.LIST -> Icon(Icons.Default.List, contentDescription = "List")
-                        CollectionViewModel.CollectionViewMode.GROUPED -> Icon(Icons.Default.ViewAgenda, contentDescription = "Grouped")
-                        CollectionViewModel.CollectionViewMode.GRID -> Icon(Icons.Default.GridView, contentDescription = "Grid")
-                    }
-                },
-                label = {}
+                icon = {},
+                label = {
+                    Text(when (mode) {
+                        CollectionViewModel.CollectionViewMode.LIST -> "☰"
+                        CollectionViewModel.CollectionViewMode.GROUPED -> "▤"
+                        CollectionViewModel.CollectionViewMode.GRID -> "▦"
+                    })
+                }
             )
         }
     }
