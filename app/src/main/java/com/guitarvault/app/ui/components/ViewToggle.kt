@@ -3,6 +3,7 @@ package com.guitarvault.app.ui.components
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.GridView
 import androidx.compose.material.icons.filled.List
+import androidx.compose.material.icons.filled.ViewAgenda
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
@@ -23,12 +24,12 @@ fun ViewToggle(
                 shape = SegmentedButtonDefaults.itemShape(index = index, count = 3),
                 icon = {
                     when (mode) {
-                        CollectionViewModel.CollectionViewMode.LIST -> Icon(Icons.Default.List, contentDescription = null)
-                        CollectionViewModel.CollectionViewMode.GROUPED -> Icon(Icons.Default.List, contentDescription = null)
-                        CollectionViewModel.CollectionViewMode.GRID -> Icon(Icons.Default.GridView, contentDescription = null)
+                        CollectionViewModel.CollectionViewMode.LIST -> Icon(Icons.Default.List, contentDescription = "List")
+                        CollectionViewModel.CollectionViewMode.GROUPED -> Icon(Icons.Default.ViewAgenda, contentDescription = "Grouped")
+                        CollectionViewModel.CollectionViewMode.GRID -> Icon(Icons.Default.GridView, contentDescription = "Grid")
                     }
                 },
-                label = { Text(mode.name.lowercase().replaceFirstChar { it.uppercase() }) }
+                label = {}
             )
         }
     }
