@@ -7,8 +7,10 @@ import com.guitarvault.app.data.model.*
 import com.guitarvault.app.data.repository.CollectionStats
 import com.guitarvault.app.data.repository.GuitarRepository
 import com.guitarvault.app.data.storage.JsonStorage
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 class CollectionViewModel(
     application: Application
@@ -135,19 +137,54 @@ class CollectionViewModel(
                 onResult(false, "Could not load image"); return@launch
             }
 
-            // Run ML Kit segmentation
-            val remover = com.guitarvault.app.ai.MlKitBackgroundRemover.getInstance(getApplication())
-            _bgRemovalProgress.value = _bgRemovalProgress.value + (photoId to "AI processing...")
+            // Write bitmap to temp file for the isolated service
+            val app = getApplication<Application>()
+            val segInputFile = java.io.File(app.cacheDir, "bg_input_${photoId}.jpg")
+            val segOutputFile = java.io.File(app.cacheDir, "bg_output_${photoId}.png")
 
-            val result = remover.removeBackground(bitmap) { progress ->
-                _bgRemovalProgress.value = _bgRemovalProgress.value + (photoId to progress)
+            withContext(kotlinx.coroutines.Dispatchers.IO) {
+                segInputFile.outputStream().use { out ->
+                    bitmap.compress(android.graphics.Bitmap.CompressFormat.JPEG, 95, out)
+                }
             }
 
-            when (result) {
-                is com.guitarvault.app.ai.BackgroundRemovalResult.Success -> {
-                    // Convert result bitmap to base64
+            // Delete any stale output file
+            segOutputFile.delete()
+
+            _bgRemovalProgress.value = _bgRemovalProgress.value + (photoId to "AI processing...")
+
+            // Start the isolated service
+            val serviceIntent = android.content.Intent(app, com.guitarvault.app.ai.SegmentationIsolatedService::class.java).apply {
+                putExtra(com.guitarvault.app.ai.SegmentationIsolatedService.EXTRA_INPUT_PATH, segInputFile.absolutePath)
+                putExtra(com.guitarvault.app.ai.SegmentationIsolatedService.EXTRA_OUTPUT_PATH, segOutputFile.absolutePath)
+            }
+            androidx.core.content.ContextCompat.startForegroundService(app, serviceIntent)
+
+            // Poll for output file (with timeout)
+            var success = false
+            val maxWaitMs = 35_000L
+            var waited = 0L
+
+            withContext(kotlinx.coroutines.Dispatchers.IO) {
+                while (waited < maxWaitMs) {
+                    if (segOutputFile.exists() && segOutputFile.length() > 0) {
+                        success = true
+                        break
+                    }
+                    kotlinx.coroutines.delay(500)
+                    waited += 500
+                    if (waited % 5000 == 0L) {
+                        _bgRemovalProgress.value = _bgRemovalProgress.value + (photoId to "AI processing... ${waited / 1000}s")
+                    }
+                }
+            }
+
+            if (success) {
+                // Read the processed bitmap and convert to base64
+                val processedBitmap = android.graphics.BitmapFactory.decodeFile(segOutputFile.absolutePath)
+                if (processedBitmap != null) {
                     val outputStream = java.io.ByteArrayOutputStream()
-                    result.bitmap.compress(android.graphics.Bitmap.CompressFormat.PNG, 100, outputStream)
+                    processedBitmap.compress(android.graphics.Bitmap.CompressFormat.PNG, 100, outputStream)
                     val newBase64 = android.util.Base64.encodeToString(outputStream.toByteArray(), android.util.Base64.NO_WRAP)
 
                     // Save original for undo, replace with processed
@@ -158,7 +195,6 @@ class CollectionViewModel(
                             backgroundRemoved = true
                         )
                     } else {
-                        // File-based photo — convert to base64 for the processed version
                         photo.copy(
                             originalFilePath = photo.filePath,
                             base64Data = newBase64,
@@ -168,12 +204,20 @@ class CollectionViewModel(
                     repository.updatePhoto(guitarId, updatedPhoto)
                     _bgRemovalProgress.value = _bgRemovalProgress.value - photoId
                     onResult(true, "Background removed")
-                }
-                is com.guitarvault.app.ai.BackgroundRemovalResult.Error -> {
+                } else {
                     _bgRemovalProgress.value = _bgRemovalProgress.value - photoId
-                    onResult(false, result.message)
+                    onResult(false, "Failed to decode processed image")
                 }
+            } else {
+                // Service process likely crashed (SIGSEGV on Android 16)
+                _bgRemovalProgress.value = _bgRemovalProgress.value - photoId
+                onResult(false, "AI processing failed (device compatibility issue)")
             }
+
+            // Cleanup temp files
+            segInputFile.delete()
+            segOutputFile.delete()
+
         } catch (e: Exception) {
             _bgRemovalProgress.value = _bgRemovalProgress.value - photoId
             onResult(false, e.message ?: "Unknown error")
