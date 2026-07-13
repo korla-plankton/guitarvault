@@ -120,7 +120,8 @@ fun GuitarDetailScreen(
                 )
                 DetailTab.VALUE -> ValuationTab(
                     guitar = guitar,
-                    onUpdateValuation = { newVal -> viewModel.updateValuation(guitarId, newVal) }
+                    onUpdateValuation = { newVal -> viewModel.updateValuation(guitarId, newVal) },
+                    onUpdateInsurance = { newIns -> viewModel.updateInsurance(guitarId, newIns) }
                 )
                 DetailTab.CONDITION -> ConditionTab(
                     guitar = guitar,

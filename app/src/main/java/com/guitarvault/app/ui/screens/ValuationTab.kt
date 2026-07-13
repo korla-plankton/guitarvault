@@ -5,12 +5,15 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.guitarvault.app.data.model.Guitar
+import com.guitarvault.app.data.model.InsuranceInfo
 import com.guitarvault.app.data.model.ValueEntry
+import com.guitarvault.app.data.model.Valuation
 import com.guitarvault.app.ui.components.SpecSection
 import com.guitarvault.app.ui.components.SpecRow
 import com.guitarvault.app.ui.components.formatCurrency
@@ -21,10 +24,13 @@ import java.util.Locale
 @Composable
 fun ValuationTab(
     guitar: Guitar,
-    onUpdateValuation: (com.guitarvault.app.data.model.Valuation) -> Unit,
+    onUpdateValuation: (Valuation) -> Unit,
+    onUpdateInsurance: (InsuranceInfo) -> Unit,
     modifier: Modifier = Modifier
 ) {
     var showAddValueDialog by remember { mutableStateOf(false) }
+    var showPurchaseDialog by remember { mutableStateOf(false) }
+    var showInsuranceDialog by remember { mutableStateOf(false) }
     val df = SimpleDateFormat("MMM d, yyyy", Locale.getDefault())
 
     Column(
@@ -44,10 +50,10 @@ fun ValuationTab(
                     color = MaterialTheme.colorScheme.primary
                 )
                 Spacer(modifier = Modifier.height(8.dp))
-                SpecRow("Purchase Price", guitar.valuation.purchasePrice?.let { formatCurrency(it) } ?: "")
-                SpecRow("Purchase Date", guitar.valuation.purchaseDate?.let { df.format(Date(it)) } ?: "")
+                SpecRow("Purchase Price", guitar.valuation.purchasePrice?.let { formatCurrency(it) } ?: "Not set")
+                SpecRow("Purchase Date", guitar.valuation.purchaseDate?.let { df.format(Date(it)) } ?: "Not set")
                 SpecRow("Purchase Source", guitar.valuation.purchaseSource)
-                SpecRow("Estimated Value", guitar.valuation.estimatedValue?.let { formatCurrency(it) } ?: "")
+                SpecRow("Estimated Value", guitar.valuation.estimatedValue?.let { formatCurrency(it) } ?: "Not set")
 
                 val profit = (guitar.valuation.currentValue ?: 0.0) - (guitar.valuation.purchasePrice ?: 0.0)
                 if (guitar.valuation.currentValue != null && guitar.valuation.purchasePrice != null) {
@@ -57,6 +63,13 @@ fun ValuationTab(
                         style = MaterialTheme.typography.bodyMedium,
                         color = if (profit >= 0) MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.error
                     )
+                }
+
+                Spacer(modifier = Modifier.height(8.dp))
+                OutlinedButton(onClick = { showPurchaseDialog = true }) {
+                    Icon(Icons.Default.Edit, contentDescription = null, modifier = Modifier.size(18.dp))
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text("Edit Purchase Info")
                 }
             }
         }
@@ -100,17 +113,27 @@ fun ValuationTab(
 
         // Insurance section
         SpecSection(title = "Insurance") {
-            SpecRow("Insured", if (guitar.insurance.insured) "Yes" else "No")
-            SpecRow("Insured Value", guitar.insurance.insuredValue?.let { formatCurrency(it) } ?: "")
-            SpecRow("Provider", guitar.insurance.provider)
-            SpecRow("Policy Number", guitar.insurance.policyNumber)
-            SpecRow("Coverage Type", guitar.insurance.coverageType)
-            SpecRow("Deductible", guitar.insurance.deductible?.let { formatCurrency(it) } ?: "")
-            SpecRow("Policy Start", guitar.insurance.policyStart?.let { df.format(Date(it)) } ?: "")
-            SpecRow("Policy End", guitar.insurance.policyEnd?.let { df.format(Date(it)) } ?: "")
+            if (guitar.insurance.insured) {
+                SpecRow("Status", "✅ Insured")
+            } else {
+                SpecRow("Status", "❌ Not insured")
+            }
+            SpecRow("Insured Value", guitar.insurance.insuredValue?.let { formatCurrency(it) } ?: "Not set")
+            SpecRow("Provider", guitar.insurance.provider.ifBlank { "Not set" })
+            SpecRow("Policy Number", guitar.insurance.policyNumber.ifBlank { "Not set" })
+            SpecRow("Coverage Type", guitar.insurance.coverageType.ifBlank { "Not set" })
+            SpecRow("Deductible", guitar.insurance.deductible?.let { formatCurrency(it) } ?: "Not set")
+            SpecRow("Policy Start", guitar.insurance.policyStart?.let { df.format(Date(it)) } ?: "Not set")
+            SpecRow("Policy End", guitar.insurance.policyEnd?.let { df.format(Date(it)) } ?: "Not set")
             if (guitar.insurance.notes.isNotBlank()) {
                 Spacer(modifier = Modifier.height(8.dp))
                 Text("Notes: ${guitar.insurance.notes}", style = MaterialTheme.typography.bodyMedium)
+            }
+            Spacer(modifier = Modifier.height(8.dp))
+            OutlinedButton(onClick = { showInsuranceDialog = true }) {
+                Icon(Icons.Default.Edit, contentDescription = null, modifier = Modifier.size(18.dp))
+                Spacer(modifier = Modifier.width(4.dp))
+                Text("Edit Insurance Info")
             }
         }
     }
@@ -127,6 +150,145 @@ fun ValuationTab(
             onDismiss = { showAddValueDialog = false }
         )
     }
+
+    if (showPurchaseDialog) {
+        PurchaseInfoDialog(
+            current = guitar.valuation,
+            onConfirm = { newValuation ->
+                onUpdateValuation(newValuation)
+                showPurchaseDialog = false
+            },
+            onDismiss = { showPurchaseDialog = false }
+        )
+    }
+
+    if (showInsuranceDialog) {
+        InsuranceDialog(
+            current = guitar.insurance,
+            onConfirm = { newInsurance ->
+                onUpdateInsurance(newInsurance)
+                showInsuranceDialog = false
+            },
+            onDismiss = { showInsuranceDialog = false }
+        )
+    }
+}
+
+@Composable
+private fun PurchaseInfoDialog(
+    current: Valuation,
+    onConfirm: (Valuation) -> Unit,
+    onDismiss: () -> Unit
+) {
+    var priceStr by remember { mutableStateOf(current.purchasePrice?.toString() ?: "") }
+    var source by remember { mutableStateOf(current.purchaseSource) }
+    var estimatedStr by remember { mutableStateOf(current.estimatedValue?.toString() ?: "") }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Edit Purchase Info") },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                OutlinedTextField(
+                    value = priceStr, onValueChange = { priceStr = it },
+                    label = { Text("Purchase Price ($)") }, singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
+                )
+                OutlinedTextField(
+                    value = source, onValueChange = { source = it },
+                    label = { Text("Purchase Source (store, online, etc.)") }, singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
+                )
+                OutlinedTextField(
+                    value = estimatedStr, onValueChange = { estimatedStr = it },
+                    label = { Text("Estimated Value ($)") }, singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = {
+                onConfirm(current.copy(
+                    purchasePrice = priceStr.toDoubleOrNull(),
+                    purchaseDate = if (current.purchaseDate == null) System.currentTimeMillis() else current.purchaseDate,
+                    purchaseSource = source,
+                    estimatedValue = estimatedStr.toDoubleOrNull()
+                ))
+            }) { Text("Save") }
+        },
+        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } }
+    )
+}
+
+@Composable
+private fun InsuranceDialog(
+    current: InsuranceInfo,
+    onConfirm: (InsuranceInfo) -> Unit,
+    onDismiss: () -> Unit
+) {
+    var insured by remember { mutableStateOf(current.insured) }
+    var insuredValueStr by remember { mutableStateOf(current.insuredValue?.toString() ?: "") }
+    var provider by remember { mutableStateOf(current.provider) }
+    var policyNumber by remember { mutableStateOf(current.policyNumber) }
+    var coverageType by remember { mutableStateOf(current.coverageType) }
+    var deductibleStr by remember { mutableStateOf(current.deductible?.toString() ?: "") }
+    var notes by remember { mutableStateOf(current.notes) }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Edit Insurance Info") },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
+                    Checkbox(checked = insured, onCheckedChange = { insured = it })
+                    Text("This guitar is insured")
+                }
+                OutlinedTextField(
+                    value = insuredValueStr, onValueChange = { insuredValueStr = it },
+                    label = { Text("Insured Value ($)") }, singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
+                )
+                OutlinedTextField(
+                    value = provider, onValueChange = { provider = it },
+                    label = { Text("Insurance Provider") }, singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
+                )
+                OutlinedTextField(
+                    value = policyNumber, onValueChange = { policyNumber = it },
+                    label = { Text("Policy Number") }, singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
+                )
+                OutlinedTextField(
+                    value = coverageType, onValueChange = { coverageType = it },
+                    label = { Text("Coverage Type (declared value, replacement, etc.)") }, singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
+                )
+                OutlinedTextField(
+                    value = deductibleStr, onValueChange = { deductibleStr = it },
+                    label = { Text("Deductible ($)") }, singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
+                )
+                OutlinedTextField(
+                    value = notes, onValueChange = { notes = it },
+                    label = { Text("Notes") }, modifier = Modifier.fillMaxWidth()
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = {
+                onConfirm(current.copy(
+                    insured = insured,
+                    insuredValue = insuredValueStr.toDoubleOrNull(),
+                    provider = provider,
+                    policyNumber = policyNumber,
+                    coverageType = coverageType,
+                    deductible = deductibleStr.toDoubleOrNull(),
+                    notes = notes
+                ))
+            }) { Text("Save") }
+        },
+        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } }
+    )
 }
 
 @Composable
