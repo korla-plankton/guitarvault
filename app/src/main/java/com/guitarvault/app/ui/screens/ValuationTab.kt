@@ -5,6 +5,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -26,6 +27,7 @@ fun ValuationTab(
     guitar: Guitar,
     onUpdateValuation: (Valuation) -> Unit,
     onUpdateInsurance: (InsuranceInfo) -> Unit,
+    onDeleteValueEntry: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
     var showAddValueDialog by remember { mutableStateOf(false) }
@@ -85,9 +87,10 @@ fun ValuationTab(
                 guitar.valuation.valueHistory.sortedByDescending { it.recordedAt }.forEach { entry ->
                     Row(
                         modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
                     ) {
-                        Column {
+                        Column(modifier = Modifier.weight(1f)) {
                             Text(formatCurrency(entry.value), style = MaterialTheme.typography.bodyMedium)
                             Text(df.format(Date(entry.recordedAt)),
                                 style = MaterialTheme.typography.labelSmall,
@@ -96,6 +99,21 @@ fun ValuationTab(
                                 Text(entry.source, style = MaterialTheme.typography.labelSmall,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant)
                             }
+                            if (entry.notes.isNotBlank()) {
+                                Text(entry.notes, style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            }
+                        }
+                        IconButton(
+                            onClick = { onDeleteValueEntry(entry.id) },
+                            modifier = Modifier.size(24.dp)
+                        ) {
+                            Icon(
+                                Icons.Default.Delete,
+                                contentDescription = "Delete valuation entry",
+                                modifier = Modifier.size(18.dp),
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
                         }
                     }
                     HorizontalDivider()

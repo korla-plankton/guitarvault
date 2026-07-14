@@ -295,6 +295,17 @@ class CollectionViewModel(
         repository.updateValuation(guitarId, valuation)
     }
 
+    fun deleteValueEntry(guitarId: String, entryId: String) = viewModelScope.launch {
+        val guitar = getGuitarById(guitarId) ?: return@launch
+        val updatedHistory = guitar.valuation.valueHistory.filter { it.id != entryId }
+        // If we're deleting the most recent entry, update currentValue to the next most recent
+        val newCurrentValue = updatedHistory.maxByOrNull { it.recordedAt }?.value
+        updateValuation(guitarId, guitar.valuation.copy(
+            valueHistory = updatedHistory,
+            currentValue = newCurrentValue
+        ))
+    }
+
     fun updateInsurance(guitarId: String, insurance: InsuranceInfo) = viewModelScope.launch {
         repository.updateInsurance(guitarId, insurance)
     }

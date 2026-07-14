@@ -72,6 +72,7 @@ data class Valuation(
 
 @Serializable
 data class ValueEntry(
+    val id: String = UUID.randomUUID().toString(),
     val value: Double,
     val recordedAt: Long = System.currentTimeMillis(),
     val source: String = "",               // appraisal, market research, etc.
