@@ -31,6 +31,7 @@ fun CollectionScreen(
     onGuitarClick: (String) -> Unit,
     onAddGuitar: () -> Unit,
     onDailySpec: () -> Unit = {},
+    onLegal: () -> Unit = {},
     viewModel: CollectionViewModel = viewModel()
 ) {
     val guitars by viewModel.guitars.collectAsState()
@@ -50,6 +51,9 @@ fun CollectionScreen(
                 actions = {
                     IconButton(onClick = onDailySpec) {
                         Icon(Icons.Default.Casino, contentDescription = "Daily Spec Challenge")
+                    }
+                    IconButton(onClick = onLegal) {
+                        Icon(Icons.Default.Info, contentDescription = "Legal / Privacy")
                     }
                     IconButton(onClick = { showFilterMenu = true }) {
                         Icon(Icons.Default.FilterList, contentDescription = "Filter")

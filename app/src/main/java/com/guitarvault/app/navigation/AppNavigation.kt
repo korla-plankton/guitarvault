@@ -15,6 +15,7 @@ object Routes {
     const val CAMERA = "camera/{guitarId}"
     const val SPEC_LOOKUP = "spec_lookup/{guitarId}"
     const val DAILY_SPEC = "daily_spec"
+    const val LEGAL = "legal"
 
     fun guitarDetail(id: String) = "guitar_detail/$id"
     fun addEditGuitar(id: String?) = "add_edit_guitar/${id ?: "new"}"
@@ -31,7 +32,8 @@ fun AppNavigation() {
             CollectionScreen(
                 onGuitarClick = { id -> navController.navigate(Routes.guitarDetail(id)) },
                 onAddGuitar = { navController.navigate(Routes.addEditGuitar(null)) },
-                onDailySpec = { navController.navigate(Routes.DAILY_SPEC) }
+                onDailySpec = { navController.navigate(Routes.DAILY_SPEC) },
+                onLegal = { navController.navigate(Routes.LEGAL) }
             )
         }
         composable(
@@ -85,6 +87,11 @@ fun AppNavigation() {
         }
         composable(Routes.DAILY_SPEC) {
             DailySpecScreen(
+                onBack = { navController.popBackStack() }
+            )
+        }
+        composable(Routes.LEGAL) {
+            LegalScreen(
                 onBack = { navController.popBackStack() }
             )
         }

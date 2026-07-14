@@ -1,3 +1,5 @@
+import java.util.Properties
+
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
@@ -18,6 +20,21 @@ android {
         vectorDrawables { useSupportLibrary = true }
     }
 
+    signingConfigs {
+        create("release") {
+            // Read from environment or local.properties for security
+            val props = Properties()
+            val localProps = File(rootProject.projectDir, "local.properties")
+            if (localProps.exists()) {
+                props.load(localProps.inputStream())
+            }
+            storeFile = File(props.getProperty("RELEASE_STORE_FILE", rootProject.projectDir.absolutePath + "/degas-release.jks"))
+            storePassword = props.getProperty("RELEASE_STORE_PASSWORD", System.getenv("RELEASE_STORE_PASSWORD") ?: "")
+            keyAlias = props.getProperty("RELEASE_KEY_ALIAS", "degas")
+            keyPassword = props.getProperty("RELEASE_KEY_PASSWORD", System.getenv("RELEASE_KEY_PASSWORD") ?: "")
+        }
+    }
+
     buildTypes {
         release {
             isMinifyEnabled = false
@@ -25,6 +42,7 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+            signingConfig = signingConfigs.getByName("release")
         }
     }
 
