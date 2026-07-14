@@ -262,8 +262,9 @@ data class Guitar(
     val provenance: List<ProvenanceEntry> = emptyList(),
 
     // Status
-    val isWishlist: Boolean = false,
-    val isSold: Boolean = false,
+    val isWishlist: Boolean = false,      // deprecated — use status
+    val isSold: Boolean = false,          // deprecated — use status
+    val status: GuitarStatus = GuitarStatus.OWNED,
     val soldDate: Long? = null,
     val soldPrice: Double? = null
 ) {
@@ -326,6 +327,13 @@ enum class GuitarType(val displayName: String) {
 enum class Handedness(val displayName: String) {
     RIGHT("Right-Handed"),
     LEFT("Left-Handed")
+}
+
+@Serializable
+enum class GuitarStatus(val displayName: String) {
+    OWNED("Owned"),
+    SOLD("Sold"),
+    WISHLIST("Wishlist")
 }
 
 // ── Wishlist ──────────────────────────────────────────────────────

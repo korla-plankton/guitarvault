@@ -8,6 +8,7 @@ import androidx.compose.material.icons.filled.AutoFixHigh
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Sell
+import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -45,6 +46,7 @@ fun GuitarDetailScreen(
     var selectedTab by remember { mutableStateOf(DetailTab.SPECS) }
     var showDeleteConfirm by remember { mutableStateOf(false) }
     var showSoldDialog by remember { mutableStateOf(false) }
+    var showAcquireDialog by remember { mutableStateOf(false) }
     var fullscreenPhotoIndex by remember { mutableStateOf<Int?>(null) }
 
     if (guitar == null) {
@@ -67,10 +69,24 @@ fun GuitarDetailScreen(
                     IconButton(onClick = { onSpecLookup(guitarId) }) {
                         Icon(Icons.Default.AutoFixHigh, contentDescription = "Auto-fill specs")
                     }
-                    if (!guitar.isSold) {
-                        IconButton(onClick = { showSoldDialog = true }) {
-                            Icon(Icons.Default.Sell, contentDescription = "Mark as sold")
+                    // Status-based actions
+                    val currentStatus = when {
+                        guitar.isSold -> com.guitarvault.app.data.model.GuitarStatus.SOLD
+                        guitar.isWishlist -> com.guitarvault.app.data.model.GuitarStatus.WISHLIST
+                        else -> guitar.status
+                    }
+                    when (currentStatus) {
+                        com.guitarvault.app.data.model.GuitarStatus.WISHLIST -> {
+                            IconButton(onClick = { showAcquireDialog = true }) {
+                                Icon(Icons.Default.ShoppingCart, contentDescription = "Acquire")
+                            }
                         }
+                        com.guitarvault.app.data.model.GuitarStatus.OWNED -> {
+                            IconButton(onClick = { showSoldDialog = true }) {
+                                Icon(Icons.Default.Sell, contentDescription = "Mark as sold")
+                            }
+                        }
+                        com.guitarvault.app.data.model.GuitarStatus.SOLD -> {}
                     }
                     IconButton(onClick = { onEdit(guitarId) }) {
                         Icon(Icons.Default.Edit, contentDescription = "Edit")
@@ -174,6 +190,34 @@ fun GuitarDetailScreen(
                 }) { Text("Mark Sold") }
             },
             dismissButton = { TextButton(onClick = { showSoldDialog = false }) { Text("Cancel") } }
+        )
+    }
+
+    // Acquire from wishlist dialog
+    if (showAcquireDialog) {
+        var acquirePriceStr by remember { mutableStateOf("") }
+        AlertDialog(
+            onDismissRequest = { showAcquireDialog = false },
+            title = { Text("Acquire Guitar") },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text("Move \"${guitar.displayName}\" from wishlist to your collection?")
+                    OutlinedTextField(
+                        value = acquirePriceStr,
+                        onValueChange = { acquirePriceStr = it },
+                        label = { Text("Purchase Price ($)") },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    viewModel.acquireFromWishlist(guitarId, acquirePriceStr.toDoubleOrNull())
+                    showAcquireDialog = false
+                }) { Text("Acquire") }
+            },
+            dismissButton = { TextButton(onClick = { showAcquireDialog = false }) { Text("Cancel") } }
         )
     }
 

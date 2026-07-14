@@ -17,6 +17,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.guitarvault.app.data.model.Guitar
+import com.guitarvault.app.data.model.GuitarStatus
 import com.guitarvault.app.data.model.GuitarType
 import com.guitarvault.app.ui.components.*
 import com.guitarvault.app.ui.components.SortDropdown
@@ -29,7 +30,6 @@ import com.guitarvault.app.ui.viewmodel.SortMode
 fun CollectionScreen(
     onGuitarClick: (String) -> Unit,
     onAddGuitar: () -> Unit,
-    onWishlistClick: () -> Unit,
     onDailySpec: () -> Unit = {},
     viewModel: CollectionViewModel = viewModel()
 ) {
@@ -39,7 +39,6 @@ fun CollectionScreen(
     val viewMode by viewModel.viewMode.collectAsState()
     val filterType by viewModel.filterType.collectAsState()
     val sortMode by viewModel.sortMode.collectAsState()
-    val wishlist by viewModel.wishlist.collectAsState()
 
     var showFilterMenu by remember { mutableStateOf(false) }
     var showSortMenu by remember { mutableStateOf(false) }
@@ -51,15 +50,6 @@ fun CollectionScreen(
                 actions = {
                     IconButton(onClick = onDailySpec) {
                         Icon(Icons.Default.Casino, contentDescription = "Daily Spec Challenge")
-                    }
-                    IconButton(onClick = onWishlistClick) {
-                        BadgedBox(badge = {
-                            if (wishlist.isNotEmpty()) {
-                                Badge { Text(wishlist.size.toString()) }
-                            }
-                        }) {
-                            Icon(Icons.Default.Favorite, contentDescription = "Wishlist")
-                        }
                     }
                     IconButton(onClick = { showFilterMenu = true }) {
                         Icon(Icons.Default.FilterList, contentDescription = "Filter")
@@ -101,6 +91,18 @@ fun CollectionScreen(
             // Stats summary
             if (guitars.isNotEmpty() || searchQuery.isBlank()) {
                 StatsBar(stats = stats)
+            }
+
+            // Status tabs
+            val statusFilter by viewModel.statusFilter.collectAsState()
+            TabRow(selectedTabIndex = statusFilter.ordinal) {
+                GuitarStatus.entries.forEach { status ->
+                    Tab(
+                        selected = statusFilter == status,
+                        onClick = { viewModel.setStatusFilter(status) },
+                        text = { Text(status.displayName) }
+                    )
+                }
             }
 
             // View toggle row

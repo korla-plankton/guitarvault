@@ -31,14 +31,26 @@ class CollectionViewModel(
     private val _sortMode = MutableStateFlow(SortMode.DATE_ADDED)
     val sortMode: StateFlow<SortMode> = _sortMode.asStateFlow()
 
+    private val _statusFilter = MutableStateFlow(GuitarStatus.OWNED)
+    val statusFilter: StateFlow<GuitarStatus> = _statusFilter.asStateFlow()
+
     val guitars: StateFlow<List<Guitar>> = combine(
         repository.guitars,
         _searchQuery,
         _filterType,
-        _sortMode
-    ) { allGuitars, query, typeFilter, sort ->
+        _sortMode,
+        _statusFilter
+    ) { allGuitars, query, typeFilter, sort, status ->
         allGuitars
-            .filter { !it.isSold }
+            .filter { guitar ->
+                // Backward compat: old guitars use isSold/isWishlist booleans
+                val guitarStatus = when {
+                    guitar.isSold -> GuitarStatus.SOLD
+                    guitar.isWishlist -> GuitarStatus.WISHLIST
+                    else -> guitar.status
+                }
+                guitarStatus == status
+            }
             .filter { guitar ->
                 (typeFilter == null || guitar.guitarType == typeFilter) &&
                 (query.isBlank() || guitar.displayName.contains(query, ignoreCase = true) ||
@@ -71,6 +83,7 @@ class CollectionViewModel(
     fun setViewMode(mode: CollectionViewMode) { _viewMode.value = mode }
     fun setFilterType(type: GuitarType?) { _filterType.value = type }
     fun setSortMode(mode: SortMode) { _sortMode.value = mode }
+    fun setStatusFilter(status: GuitarStatus) { _statusFilter.value = status }
 
     fun addGuitar(guitar: Guitar) = viewModelScope.launch {
         repository.addGuitar(guitar)
@@ -313,6 +326,7 @@ class CollectionViewModel(
     fun markAsSold(guitarId: String, soldPrice: Double, soldDate: Long = System.currentTimeMillis()) = viewModelScope.launch {
         val guitar = getGuitarById(guitarId) ?: return@launch
         updateGuitar(guitar.copy(
+            status = GuitarStatus.SOLD,
             isSold = true,
             soldPrice = soldPrice,
             soldDate = soldDate,
@@ -322,7 +336,25 @@ class CollectionViewModel(
 
     fun undoSold(guitarId: String) = viewModelScope.launch {
         val guitar = getGuitarById(guitarId) ?: return@launch
-        updateGuitar(guitar.copy(isSold = false, soldPrice = null, soldDate = null))
+        updateGuitar(guitar.copy(status = GuitarStatus.OWNED, isSold = false, soldPrice = null, soldDate = null))
+    }
+
+    fun acquireFromWishlist(guitarId: String, purchasePrice: Double?) = viewModelScope.launch {
+        val guitar = getGuitarById(guitarId) ?: return@launch
+        updateGuitar(guitar.copy(
+            status = GuitarStatus.OWNED,
+            isWishlist = false,
+            valuation = guitar.valuation.copy(purchasePrice = purchasePrice, purchaseDate = System.currentTimeMillis())
+        ))
+    }
+
+    fun setGuitarStatus(guitarId: String, status: GuitarStatus) = viewModelScope.launch {
+        val guitar = getGuitarById(guitarId) ?: return@launch
+        updateGuitar(guitar.copy(
+            status = status,
+            isSold = status == GuitarStatus.SOLD,
+            isWishlist = status == GuitarStatus.WISHLIST
+        ))
     }
 
     fun exportCollection(targetFile: java.io.File) = viewModelScope.launch {

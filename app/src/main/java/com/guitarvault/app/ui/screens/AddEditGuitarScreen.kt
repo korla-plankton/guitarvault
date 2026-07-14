@@ -77,6 +77,16 @@ fun AddEditGuitarScreen(
     var weightStr by remember { mutableStateOf(existing?.weight?.toString() ?: "") }
     var notes by remember { mutableStateOf(existing?.notes ?: "") }
     var tagsStr by remember { mutableStateOf(existing?.tags?.joinToString(", ") ?: "") }
+    var guitarStatus by remember {
+        mutableStateOf(
+            when {
+                existing?.isSold == true -> GuitarStatus.SOLD
+                existing?.isWishlist == true -> GuitarStatus.WISHLIST
+                existing != null -> existing.status
+                else -> GuitarStatus.OWNED
+            }
+        )
+    }
 
     val customFields = remember { mutableStateListOf<CustomField>().apply { existing?.customFields?.let { addAll(it) } } }
 
@@ -117,6 +127,9 @@ fun AddEditGuitarScreen(
                             weight = weightStr.toDoubleOrNull(),
                             notes = notes,
                             tags = tagsStr.split(",").map { it.trim() }.filter { it.isNotBlank() },
+                            status = guitarStatus,
+                            isSold = guitarStatus == GuitarStatus.SOLD,
+                            isWishlist = guitarStatus == GuitarStatus.WISHLIST,
                             customFields = customFields.toList(),
                             photos = existing?.photos ?: emptyList(),
                             valuation = existing?.valuation ?: Valuation(),
@@ -153,6 +166,7 @@ fun AddEditGuitarScreen(
                 LabeledTextField("Country of Origin", countryOfOrigin, { countryOfOrigin = it })
                 GuitarTypeDropdown(selected = guitarType, onSelected = { guitarType = it })
                 HandednessToggle(selected = handedness, onSelected = { handedness = it })
+                StatusPicker(selected = guitarStatus, onSelected = { guitarStatus = it })
             }
             Spacer(modifier = Modifier.height(16.dp))
 
@@ -261,6 +275,24 @@ private fun HandednessToggle(selected: Handedness, onSelected: (Handedness) -> U
                 RadioButton(selected = selected == hand, onClick = { onSelected(hand) })
                 Text(hand.displayName)
                 Spacer(modifier = Modifier.width(16.dp))
+            }
+        }
+    }
+}
+
+@Composable
+private fun StatusPicker(selected: GuitarStatus, onSelected: (GuitarStatus) -> Unit) {
+    var expanded by remember { mutableStateOf(false) }
+    Box {
+        OutlinedButton(onClick = { expanded = true }) {
+            Text("Status: ${selected.displayName}")
+        }
+        DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+            GuitarStatus.entries.forEach { status ->
+                DropdownMenuItem(
+                    text = { Text(status.displayName) },
+                    onClick = { onSelected(status); expanded = false }
+                )
             }
         }
     }
