@@ -1,10 +1,10 @@
-# Terms of Service for De-GAS
+# Terms of Service for GuitarVault
 
 **Last updated: July 12, 2026**
 
 ## 1. Acceptance of Terms
 
-By downloading, installing, or using De-GAS ("Digital Guitar Asset System", the "App"), you agree to be bound by these Terms of Service ("Terms"). If you do not agree to these Terms, do not install or use the App.
+By downloading, installing, or using GuitarVault (the "App"), you agree to be bound by these Terms of Service ("Terms"). If you do not agree to these Terms, do not install or use the App.
 
 ## 2. License
 
@@ -99,11 +99,11 @@ These Terms are governed by the laws of your jurisdiction of residence, without 
 ## 11. Contact
 
 For questions about these Terms, contact:
-- GitHub: [korla-plankton/de-gas](https://github.com/korla-plankton/de-gas)
+- GitHub: [korla-plankton/guitarvault](https://github.com/korla-plankton/guitarvault)
 
 ## 12. Open Source Notices
 
-De-GAS is built with the following open-source components:
+GuitarVault is built with the following open-source components:
 - **Jetpack Compose** (Apache 2.0) — UI framework
 - **CameraX** (Apache 2.0) — Camera capture
 - **ML Kit Subject Segmentation** (Google) — On-device AI

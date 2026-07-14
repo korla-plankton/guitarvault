@@ -123,7 +123,7 @@ class SegmentationIsolatedService : Service() {
         }
 
         return NotificationCompat.Builder(this, CHANNEL_ID)
-            .setContentTitle("De-GAS")
+            .setContentTitle("GuitarVault")
             .setContentText("Processing photo with AI...")
             .setSmallIcon(android.R.drawable.ic_menu_camera)
             .setOngoing(true)

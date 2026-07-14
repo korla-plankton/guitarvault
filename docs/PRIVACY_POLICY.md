@@ -1,8 +1,8 @@
-# Privacy Policy for De-GAS
+# Privacy Policy for GuitarVault
 
 **Last updated: July 12, 2026**
 
-De-GAS ("Digital Guitar Asset System") is a mobile application that helps guitar collectors manage their collections. This Privacy Policy explains how the app handles your data.
+GuitarVault is a mobile application that helps guitar collectors manage their collections. This Privacy Policy explains how the app handles your data.
 
 ## 1. Data We Collect
 
@@ -31,7 +31,7 @@ De-GAS ("Digital Guitar Asset System") is a mobile application that helps guitar
 All your data — guitar specs, photos, valuations, and everything else — is stored **entirely on your device** in a local JSON file within the app's private storage area. Your data never leaves your device unless you manually export it.
 
 ### 2.2 No Cloud Sync
-De-GAS does not use cloud servers, databases, or sync. There is no account system. Your collection exists only on the device where you created it.
+GuitarVault does not use cloud servers, databases, or sync. There is no account system. Your collection exists only on the device where you created it.
 
 ### 2.3 Backup and Export
 You can export your collection as a JSON file at any time. This export is saved to a location you choose. You are responsible for the security of any exported files.
@@ -85,11 +85,11 @@ We may update this Privacy Policy from time to time. Any changes will be posted 
 ## 10. Contact
 
 For privacy questions or requests, please contact:
-- GitHub: [korla-plankton/de-gas](https://github.com/korla-plankton/de-gas)
+- GitHub: [korla-plankton/guitarvault](https://github.com/korla-plankton/guitarvault)
 
 ## 11. Open Source Components
 
-De-GAS uses the following open-source libraries:
+GuitarVault uses the following open-source libraries:
 - Jetpack Compose (Apache 2.0)
 - CameraX (Apache 2.0)
 - ML Kit Subject Segmentation (Google)

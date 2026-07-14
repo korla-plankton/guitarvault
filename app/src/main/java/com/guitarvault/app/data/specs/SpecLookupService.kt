@@ -144,7 +144,7 @@ class SpecLookupService {
     }
 
     /**
-     * Map raw spec keys from online sources to De-GAS Guitar fields.
+     * Map raw spec keys from online sources to GuitarVault Guitar fields.
      */
     fun mapSpecsToGuitar(specs: Map<String, String>): Map<String, String> {
         val mapping = mutableMapOf<String, String>()

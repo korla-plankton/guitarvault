@@ -47,7 +47,7 @@ fun CollectionScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("De-GAS") },
+                title = { Text("GuitarVault") },
                 actions = {
                     IconButton(onClick = onDailySpec) {
                         Icon(Icons.Default.Casino, contentDescription = "Daily Spec Challenge")

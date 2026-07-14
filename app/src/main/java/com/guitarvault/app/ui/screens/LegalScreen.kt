@@ -59,7 +59,7 @@ fun LegalScreen(onBack: () -> Unit) {
             Spacer(modifier = Modifier.height(32.dp))
 
             Text(
-                "De-GAS v1.0.0\n© 2026 korla-plankton\nAll rights reserved.",
+                "GuitarVault v1.0.0\n© 2026 korla-plankton\nAll rights reserved.",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -70,7 +70,7 @@ fun LegalScreen(onBack: () -> Unit) {
 private const val PRIVACY_POLICY = """
 Last updated: July 12, 2026
 
-De-GAS ("Digital Guitar Asset System") stores all data locally on your device. No personal data is collected, transmitted, or shared with third parties.
+GuitarVault stores all data locally on your device. No personal data is collected, transmitted, or shared with third parties.
 
 DATA WE DO NOT COLLECT:
 • No name, email, or account information
@@ -101,13 +101,13 @@ THIRD-PARTY SERVICES:
 • Web browser (when you tap spec search buttons)
 
 CONTACT:
-github.com/korla-plankton/de-gas
+github.com/korla-plankton/guitarvault
 """
 
 private const val TERMS_OF_SERVICE = """
 Last updated: July 12, 2026
 
-1. ACCEPTANCE: By using De-GAS, you agree to these Terms.
+1. ACCEPTANCE: By using GuitarVault, you agree to these Terms.
 
 2. LICENSE: The App is proprietary. You may install and use it on your personal device. You may not copy, redistribute, reverse engineer, or resell the App.
 
@@ -125,7 +125,7 @@ Last updated: July 12, 2026
 """
 
 private const val OPEN_SOURCE_LICENSES = """
-De-GAS is built with the following open-source libraries:
+GuitarVault is built with the following open-source libraries:
 
 • Jetpack Compose — Apache 2.0
 • CameraX — Apache 2.0
