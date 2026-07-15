@@ -11,7 +11,7 @@ android {
     compileSdk = 36
 
     defaultConfig {
-        applicationId = "com.guitarvault.app"
+        applicationId = "com.planktone.guitarvault"
         minSdk = 31          // Android 12 — required for ML Kit Subject Segmentation
         targetSdk = 36       // Android 16
         versionCode = 1
