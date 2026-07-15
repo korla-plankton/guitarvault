@@ -52,18 +52,9 @@ fun FullScreenPhotoViewer(
             var offsetX by remember(page) { mutableFloatStateOf(0f) }
             var offsetY by remember(page) { mutableFloatStateOf(0f) }
 
-            AsyncImage(
-                model = model,
-                contentDescription = photo.caption.ifEmpty { photo.photoType.displayName },
-                contentScale = ContentScale.Fit,
+            Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .graphicsLayer(
-                        scaleX = scale,
-                        scaleY = scale,
-                        translationX = offsetX,
-                        translationY = offsetY
-                    )
                     .pointerInput(page) {
                         detectTransformGestures { _, pan, zoom, _ ->
                             scale = (scale * zoom).coerceIn(1f, 5f)
@@ -76,7 +67,21 @@ fun FullScreenPhotoViewer(
                             }
                         }
                     }
-            )
+            ) {
+                AsyncImage(
+                    model = model,
+                    contentDescription = photo.caption.ifEmpty { photo.photoType.displayName },
+                    contentScale = ContentScale.Fit,
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .graphicsLayer(
+                            scaleX = scale,
+                            scaleY = scale,
+                            translationX = offsetX,
+                            translationY = offsetY
+                        )
+                )
+            }
         }
 
         // Close button

@@ -1,6 +1,7 @@
 package com.guitarvault.app.ui.screens
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
@@ -99,9 +100,10 @@ fun GuitarDetailScreen(
         }
     ) { padding ->
         Column(modifier = Modifier.padding(padding)) {
-            // Hero photo
+            // Hero photo (tappable for full-screen)
             guitar.primaryPhoto?.let { photo ->
                 val photoModel = viewModel.getPhotoModel(photo)
+                val heroIndex = guitar.photos.indexOfFirst { it.id == photo.id }
                 if (photoModel != null) {
                     AsyncImage(
                         model = photoModel,
@@ -111,6 +113,7 @@ fun GuitarDetailScreen(
                             .fillMaxWidth()
                             .height(200.dp)
                             .clip(RoundedCornerShape(bottomStart = 16.dp, bottomEnd = 16.dp))
+                            .clickable { if (heroIndex >= 0) fullscreenPhotoIndex = heroIndex }
                     )
                 }
             }

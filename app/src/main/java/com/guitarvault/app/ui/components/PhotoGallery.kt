@@ -246,7 +246,7 @@ private fun AddPhotoButton(onClick: () -> Unit) {
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 Icon(Icons.Default.Add, contentDescription = "Add photo")
                 Spacer(modifier = Modifier.height(4.dp))
-                Text("Add Photo", style = MaterialTheme.typography.labelSmall)
+                Text("Take Photo", style = MaterialTheme.typography.labelSmall)
             }
         }
     }
