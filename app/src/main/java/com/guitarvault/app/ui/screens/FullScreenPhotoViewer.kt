@@ -12,10 +12,13 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.guitarvault.app.data.model.GuitarPhoto
@@ -47,7 +50,6 @@ fun FullScreenPhotoViewer(
             val photo = photos[page]
             val model = photoModelProvider(photo)
 
-            // Each page has its own zoom/pan state
             var scale by remember(page) { mutableFloatStateOf(1f) }
             var offsetX by remember(page) { mutableFloatStateOf(0f) }
             var offsetY by remember(page) { mutableFloatStateOf(0f) }
@@ -55,10 +57,12 @@ fun FullScreenPhotoViewer(
             Box(
                 modifier = Modifier
                     .fillMaxSize()
+                    .clipToBounds()
                     .pointerInput(page) {
                         detectTransformGestures { _, pan, zoom, _ ->
-                            scale = (scale * zoom).coerceIn(1f, 5f)
-                            if (scale > 1f) {
+                            val newScale = (scale * zoom).coerceIn(1f, 5f)
+                            scale = newScale
+                            if (newScale > 1f) {
                                 offsetX += pan.x
                                 offsetY += pan.y
                             } else {
@@ -68,19 +72,21 @@ fun FullScreenPhotoViewer(
                         }
                     }
             ) {
-                AsyncImage(
-                    model = model,
-                    contentDescription = photo.caption.ifEmpty { photo.photoType.displayName },
-                    contentScale = ContentScale.Fit,
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .graphicsLayer(
-                            scaleX = scale,
-                            scaleY = scale,
-                            translationX = offsetX,
-                            translationY = offsetY
-                        )
-                )
+                if (model != null) {
+                    AsyncImage(
+                        model = model,
+                        contentDescription = photo.caption.ifEmpty { photo.photoType.displayName },
+                        contentScale = ContentScale.Fit,
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .graphicsLayer(
+                                scaleX = scale,
+                                scaleY = scale,
+                                translationX = offsetX,
+                                translationY = offsetY
+                            )
+                    )
+                }
             }
         }
 
