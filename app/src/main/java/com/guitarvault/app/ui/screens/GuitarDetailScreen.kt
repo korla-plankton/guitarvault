@@ -245,6 +245,25 @@ private fun PhotosTab(
     var pasteStatus by remember { mutableStateOf<String?>(null) }
     val bgProgress by viewModel.bgRemovalProgress.collectAsState()
 
+    // Photo picker launcher
+    val photoPickerLauncher = androidx.activity.compose.rememberLauncherForActivityResult(
+        androidx.activity.result.contract.ActivityResultContracts.PickVisualMedia()
+    ) { uri ->
+        if (uri != null) {
+            val base64 = com.guitarvault.app.util.GalleryImageReader.readImageAsBase64(context, uri)
+            if (base64 != null) {
+                viewModel.addPhotoToGuitar(guitar.id, GuitarPhoto(
+                    base64Data = base64,
+                    photoType = com.guitarvault.app.data.model.PhotoType.GENERAL,
+                    isPrimary = guitar.photos.isEmpty()
+                ))
+                pasteStatus = "✅ Photo imported from gallery"
+            } else {
+                pasteStatus = "❌ Failed to load image from gallery"
+            }
+        }
+    }
+
     Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
         pasteStatus?.let {
             Text(it, style = MaterialTheme.typography.bodySmall,
@@ -267,6 +286,13 @@ private fun PhotosTab(
                 } else {
                     pasteStatus = "❌ No image found on clipboard. Copy an image first."
                 }
+            },
+            onPickFromGallery = {
+                photoPickerLauncher.launch(
+                    androidx.activity.result.PickVisualMediaRequest(
+                        androidx.activity.result.contract.ActivityResultContracts.PickVisualMedia.ImageOnly
+                    )
+                )
             },
             onRemovePhoto = { photo ->
                 viewModel.removePhotoFromGuitar(guitar.id, photo.id)

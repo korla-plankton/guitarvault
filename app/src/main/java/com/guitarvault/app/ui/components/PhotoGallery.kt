@@ -10,6 +10,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.AutoFixHigh
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.PhotoLibrary
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.Undo
 import androidx.compose.material3.*
@@ -36,7 +37,8 @@ fun PhotoGallery(
     photos: List<GuitarPhoto>,
     photoModelProvider: (GuitarPhoto) -> Any?,
     onAddPhoto: () -> Unit,
-    onPastePhoto: () -> Unit,
+    onPastePhoto: () -> Unit = {},
+    onPickFromGallery: () -> Unit = {},
     onRemovePhoto: (GuitarPhoto) -> Unit,
     onSetPrimary: (GuitarPhoto) -> Unit,
     onPhotoClick: (GuitarPhoto) -> Unit,
@@ -67,6 +69,9 @@ fun PhotoGallery(
         }
         item {
             PastePhotoButton(onClick = onPastePhoto)
+        }
+        item {
+            GalleryPickerButton(onClick = onPickFromGallery)
         }
     }
 }
@@ -261,6 +266,25 @@ private fun PastePhotoButton(onClick: () -> Unit) {
                 Icon(Icons.Default.Add, contentDescription = "Paste photo")
                 Spacer(modifier = Modifier.height(4.dp))
                 Text("Paste Photo", style = MaterialTheme.typography.labelSmall)
+            }
+        }
+    }
+}
+
+@Composable
+private fun GalleryPickerButton(onClick: () -> Unit) {
+    Card(
+        onClick = onClick,
+        modifier = Modifier.size(120.dp, 140.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant
+        )
+    ) {
+        Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Icon(Icons.Default.PhotoLibrary, contentDescription = "Pick from gallery")
+                Spacer(modifier = Modifier.height(4.dp))
+                Text("Gallery", style = MaterialTheme.typography.labelSmall)
             }
         }
     }
