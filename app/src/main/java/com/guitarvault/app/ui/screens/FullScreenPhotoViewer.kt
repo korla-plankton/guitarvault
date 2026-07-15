@@ -79,12 +79,14 @@ fun FullScreenPhotoViewer(
                         contentScale = ContentScale.Fit,
                         modifier = Modifier
                             .fillMaxSize()
-                            .graphicsLayer(
-                                scaleX = scale,
-                                scaleY = scale,
-                                translationX = offsetX,
+                            .graphicsLayer {
+                                // Lambda version: reads state in draw phase, not composition
+                                // This prevents recomposition and screen blackout during zoom
+                                scaleX = scale
+                                scaleY = scale
+                                translationX = offsetX
                                 translationY = offsetY
-                            )
+                            }
                     )
                 }
             }
