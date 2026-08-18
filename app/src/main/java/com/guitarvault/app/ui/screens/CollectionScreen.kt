@@ -27,9 +27,7 @@ import com.guitarvault.app.ui.components.SortDropdown
 import com.guitarvault.app.ui.components.SpecCompletenessBar
 import com.guitarvault.app.ui.viewmodel.CollectionViewModel
 import com.guitarvault.app.ui.viewmodel.SortMode
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -59,26 +57,22 @@ fun CollectionScreen(
     val scope = rememberCoroutineScope()
     val snackbarHostState = remember { SnackbarHostState() }
 
-    // SAF export: pick a location, write the collection JSON to the returned URI
+    // SAF export: pick a location, write collection JSON + photos as a ZIP to the returned URI
     val exportLauncher = rememberLauncherForActivityResult(
-        ActivityResultContracts.CreateDocument("application/json")
+        ActivityResultContracts.CreateDocument("application/zip")
     ) { uri ->
         if (uri != null && isExporting) {
             scope.launch {
-                val json = viewModel.getCollectionJson()
-                val written = withContext(Dispatchers.IO) {
-                    try {
-                        context.contentResolver.openOutputStream(uri)?.use { out ->
-                            out.write(json.toByteArray())
-                            out.flush()
-                        } != null // openOutputStream returns null when the URI can't be opened
-                    } catch (e: Exception) {
-                        android.util.Log.e("CollectionScreen", "Export write failed", e)
-                        false
-                    }
+                val written = try {
+                    val stream = context.contentResolver.openOutputStream(uri)
+                    if (stream == null) -1
+                    else viewModel.exportCollectionZip(stream).await().also { stream.close() }
+                } catch (e: Exception) {
+                    android.util.Log.e("CollectionScreen", "Export write failed", e)
+                    -1
                 }
                 isExporting = false
-                exportStatus = if (written) "✅ Collection exported successfully"
+                exportStatus = if (written >= 0) "✅ Collection exported with $written photo${if (written == 1) "" else "s"}"
                                 else "❌ Export failed — could not write file"
             }
         } else {
@@ -86,23 +80,20 @@ fun CollectionScreen(
         }
     }
 
-    // SAF import: pick a JSON backup file, parse it, replace the collection
+    // SAF import: pick a backup file (ZIP with photos, or legacy JSON), replace the collection
     val importLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.OpenDocument()
     ) { uri ->
         if (uri != null) {
             scope.launch {
-                val text = withContext(Dispatchers.IO) {
-                    try {
-                        context.contentResolver.openInputStream(uri)?.use { input ->
-                            input.bufferedReader().readText()
-                        }
-                    } catch (e: Exception) {
-                        android.util.Log.e("CollectionScreen", "Import read failed", e)
-                        null
-                    }
+                val ok = try {
+                    val stream = context.contentResolver.openInputStream(uri)
+                    if (stream == null) false
+                    else viewModel.importCollectionBackup(stream).await()
+                } catch (e: Exception) {
+                    android.util.Log.e("CollectionScreen", "Import failed", e)
+                    false
                 }
-                val ok = if (text != null) viewModel.importCollectionJson(text).await() else false
                 exportStatus = if (ok) "✅ Collection imported successfully"
                                else "❌ Import failed — invalid backup file"
             }
@@ -160,18 +151,18 @@ fun CollectionScreen(
                     // Export/Import menu
                     DropdownMenu(expanded = showExportMenu, onDismissRequest = { showExportMenu = false }) {
                         DropdownMenuItem(
-                            text = { Text("📤 Export Collection") },
+                            text = { Text("📤 Export Collection (ZIP)") },
                             onClick = {
                                 showExportMenu = false
                                 isExporting = true
-                                exportLauncher.launch("guitarvault-backup-${System.currentTimeMillis()}.json")
+                                exportLauncher.launch("guitarvault-backup-${System.currentTimeMillis()}.zip")
                             }
                         )
                         DropdownMenuItem(
                             text = { Text("📥 Import Collection") },
                             onClick = {
                                 showExportMenu = false
-                                importLauncher.launch(arrayOf("application/json", "*/*"))
+                                importLauncher.launch(arrayOf("application/zip", "application/json", "*/*"))
                             }
                         )
                     }

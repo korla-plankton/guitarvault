@@ -12,7 +12,14 @@ import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
+import java.io.BufferedInputStream
+import java.io.BufferedOutputStream
 import java.io.File
+import java.io.InputStream
+import java.io.OutputStream
+import java.util.zip.ZipEntry
+import java.util.zip.ZipInputStream
+import java.util.zip.ZipOutputStream
 
 /**
  * JSON file-backed storage for the entire guitar collection.
@@ -139,5 +146,117 @@ class JsonStorage private constructor(private val context: Context) {
     } catch (e: Exception) {
         Log.e(TAG, "Import failed", e)
         false
+    }
+
+    /**
+     * Export the collection WITH photos as a ZIP (for backup with images).
+     * Layout: collection.json at the root + every referenced photo file under photos/.
+     * Base64 photos live inside the JSON already.
+     * Returns the number of photo files written, or -1 on failure.
+     */
+    suspend fun exportZipTo(targetStream: OutputStream): Int = withContext(Dispatchers.IO) {
+        try {
+            val data = _collection.value
+
+            // Collect all photo files referenced by the collection
+            val photoFiles = mutableListOf<File>()
+            data.guitars.forEach { guitar ->
+                guitar.photos.forEach { photo ->
+                    if (photo.filePath.isNotBlank()) photoFiles.add(getPhotoFile(photo.filePath))
+                    photo.originalFilePath?.takeIf { it.isNotBlank() && it != photo.filePath }?.let {
+                        photoFiles.add(getPhotoFile(it))
+                    }
+                }
+            }
+
+            ZipOutputStream(BufferedOutputStream(targetStream)).use { zip ->
+                // 1. Collection JSON
+                zip.putNextEntry(ZipEntry(COLLECTION_FILE))
+                zip.write(json.encodeToString(data).toByteArray(Charsets.UTF_8))
+                zip.closeEntry()
+
+                // 2. Photo files (relative paths, e.g. photos/photo_123.jpg)
+                var written = 0
+                photoFiles.distinctBy { it.path }.forEach { file ->
+                    if (file.exists()) {
+                        val entryName = file.relativeTo(context.filesDir).path
+                        zip.putNextEntry(ZipEntry(entryName))
+                        file.inputStream().use { it.copyTo(zip) }
+                        zip.closeEntry()
+                        written++
+                    } else {
+                        Log.w(TAG, "Photo file missing, skipped in export: ${file.path}")
+                    }
+                }
+                Log.i(TAG, "Exported ZIP: ${data.guitars.size} guitars, $written photo files")
+                written
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "ZIP export failed", e)
+            -1
+        }
+    }
+
+    /**
+     * Import a backup from a stream: ZIP (collection.json + photos/) or a
+     * plain JSON export from older versions. Replaces current data.
+     */
+    suspend fun importBackupFrom(sourceStream: InputStream): Boolean = withContext(Dispatchers.IO) {
+        try {
+            val buffered = BufferedInputStream(sourceStream)
+            // Sniff the ZIP magic number ("PK") to stay compatible with old JSON-only exports
+            buffered.mark(4)
+            val header = ByteArray(2)
+            val headerLen = buffered.read(header)
+            buffered.reset()
+
+            if (headerLen == 2 && header[0] == 0x50.toByte() && header[1] == 0x4B.toByte()) {
+                importZipStream(buffered)
+            } else {
+                importFromJson(buffered.bufferedReader().readText())
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Backup import failed", e)
+            false
+        }
+    }
+
+    /** Unpack a backup ZIP: restore photo files, then load collection.json. */
+    private suspend fun importZipStream(stream: InputStream): Boolean {
+        var collectionJson: String? = null
+        var photosRestored = 0
+
+        ZipInputStream(stream).use { zip ->
+            var entry = zip.nextEntry
+            while (entry != null) {
+                if (!entry.isDirectory) {
+                    when {
+                        entry.name == COLLECTION_FILE ->
+                            collectionJson = zip.readBytes().toString(Charsets.UTF_8)
+
+                        entry.name.startsWith("$PHOTOS_DIR/") -> {
+                            val target = getPhotoFile(entry.name)
+                            // Zip-slip guard: only allow paths that stay inside filesDir
+                            if (target.canonicalPath.startsWith(context.filesDir.canonicalPath + File.separator)) {
+                                target.parentFile?.mkdirs()
+                                target.outputStream().use { zip.copyTo(it) }
+                                photosRestored++
+                            } else {
+                                Log.w(TAG, "Skipping unsafe zip entry: ${entry.name}")
+                            }
+                        }
+                    }
+                }
+                zip.closeEntry()
+                entry = zip.nextEntry
+            }
+        }
+
+        val text = collectionJson ?: run {
+            Log.e(TAG, "ZIP backup missing $COLLECTION_FILE")
+            return false
+        }
+        Log.i(TAG, "Imported ZIP: restored $photosRestored photo files")
+        return importFromJson(text)
     }
 }
