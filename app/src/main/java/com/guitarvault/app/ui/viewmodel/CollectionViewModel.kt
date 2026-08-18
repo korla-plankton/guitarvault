@@ -8,6 +8,7 @@ import com.guitarvault.app.data.repository.CollectionStats
 import com.guitarvault.app.data.repository.GuitarRepository
 import com.guitarvault.app.data.storage.JsonStorage
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -369,6 +370,13 @@ class CollectionViewModel(
     fun importCollection(sourceFile: java.io.File) = viewModelScope.launch {
         storage.importFrom(sourceFile)
     }
+
+    /** Encode the whole collection as JSON (for SAF export via content URI). */
+    fun getCollectionJson(): String = storage.getCollectionJson()
+
+    /** Import collection from JSON text (for SAF import via content URI). Returns false if the file is invalid. */
+    fun importCollectionJson(text: String): kotlinx.coroutines.Deferred<Boolean> =
+        viewModelScope.async { storage.importFromJson(text) }
 
     // Wishlist
     fun addWishlistItem(item: WishlistItem) = viewModelScope.launch {

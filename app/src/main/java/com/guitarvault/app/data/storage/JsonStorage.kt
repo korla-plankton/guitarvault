@@ -121,12 +121,23 @@ class JsonStorage private constructor(private val context: Context) {
     suspend fun importFrom(sourceFile: File): Boolean = withContext(Dispatchers.IO) {
         try {
             val text = sourceFile.readText()
-            val imported = json.decodeFromString<CollectionData>(text)
-            update { imported }
-            true
+            importFromJson(text)
         } catch (e: Exception) {
             Log.e(TAG, "Import failed", e)
             false
         }
+    }
+
+    /** Encode the current collection as pretty-printed JSON (for backup/export). */
+    fun getCollectionJson(): String = json.encodeToString(_collection.value)
+
+    /** Import collection from a JSON string (replaces current data). */
+    suspend fun importFromJson(text: String): Boolean = try {
+        val imported = json.decodeFromString<CollectionData>(text)
+        update { imported }
+        true
+    } catch (e: Exception) {
+        Log.e(TAG, "Import failed", e)
+        false
     }
 }

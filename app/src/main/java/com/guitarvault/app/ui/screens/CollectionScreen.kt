@@ -1,5 +1,7 @@
 package com.guitarvault.app.ui.screens
 
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.grid.GridCells
@@ -13,6 +15,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -24,6 +27,9 @@ import com.guitarvault.app.ui.components.SortDropdown
 import com.guitarvault.app.ui.components.SpecCompletenessBar
 import com.guitarvault.app.ui.viewmodel.CollectionViewModel
 import com.guitarvault.app.ui.viewmodel.SortMode
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -45,8 +51,74 @@ fun CollectionScreen(
 
     var showFilterMenu by remember { mutableStateOf(false) }
     var showSortMenu by remember { mutableStateOf(false) }
+    var showExportMenu by remember { mutableStateOf(false) }
+    var exportStatus by remember { mutableStateOf<String?>(null) }
+    var isExporting by remember { mutableStateOf(false) }
+
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    val snackbarHostState = remember { SnackbarHostState() }
+
+    // SAF export: pick a location, write the collection JSON to the returned URI
+    val exportLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.CreateDocument("application/json")
+    ) { uri ->
+        if (uri != null && isExporting) {
+            scope.launch {
+                val json = viewModel.getCollectionJson()
+                val written = withContext(Dispatchers.IO) {
+                    try {
+                        context.contentResolver.openOutputStream(uri)?.use { out ->
+                            out.write(json.toByteArray())
+                            out.flush()
+                        } != null // openOutputStream returns null when the URI can't be opened
+                    } catch (e: Exception) {
+                        android.util.Log.e("CollectionScreen", "Export write failed", e)
+                        false
+                    }
+                }
+                isExporting = false
+                exportStatus = if (written) "✅ Collection exported successfully"
+                                else "❌ Export failed — could not write file"
+            }
+        } else {
+            isExporting = false
+        }
+    }
+
+    // SAF import: pick a JSON backup file, parse it, replace the collection
+    val importLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.OpenDocument()
+    ) { uri ->
+        if (uri != null) {
+            scope.launch {
+                val text = withContext(Dispatchers.IO) {
+                    try {
+                        context.contentResolver.openInputStream(uri)?.use { input ->
+                            input.bufferedReader().readText()
+                        }
+                    } catch (e: Exception) {
+                        android.util.Log.e("CollectionScreen", "Import read failed", e)
+                        null
+                    }
+                }
+                val ok = if (text != null) viewModel.importCollectionJson(text).await() else false
+                exportStatus = if (ok) "✅ Collection imported successfully"
+                               else "❌ Import failed — invalid backup file"
+            }
+        }
+    }
+
+    // Surface export/import results as a Snackbar
+    LaunchedEffect(exportStatus) {
+        exportStatus?.let {
+            snackbarHostState.showSnackbar(it)
+            exportStatus = null
+        }
+    }
 
     Scaffold(
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             TopAppBar(
                 title = { Text("GuitarVault") },
@@ -62,6 +134,9 @@ fun CollectionScreen(
                     }
                     IconButton(onClick = { showSortMenu = true }) {
                         Icon(Icons.Default.Sort, contentDescription = "Sort")
+                    }
+                    IconButton(onClick = { showExportMenu = true }) {
+                        Icon(Icons.Default.MoreVert, contentDescription = "Menu")
                     }
                     DropdownMenu(expanded = showSortMenu, onDismissRequest = { showSortMenu = false }) {
                         SortMode.entries.forEach { mode ->
@@ -81,6 +156,24 @@ fun CollectionScreen(
                                 onClick = { viewModel.setFilterType(type); showFilterMenu = false }
                             )
                         }
+                    }
+                    // Export/Import menu
+                    DropdownMenu(expanded = showExportMenu, onDismissRequest = { showExportMenu = false }) {
+                        DropdownMenuItem(
+                            text = { Text("📤 Export Collection") },
+                            onClick = {
+                                showExportMenu = false
+                                isExporting = true
+                                exportLauncher.launch("guitarvault-backup-${System.currentTimeMillis()}.json")
+                            }
+                        )
+                        DropdownMenuItem(
+                            text = { Text("📥 Import Collection") },
+                            onClick = {
+                                showExportMenu = false
+                                importLauncher.launch(arrayOf("application/json", "*/*"))
+                            }
+                        )
                     }
                 }
             )
