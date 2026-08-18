@@ -153,7 +153,7 @@ fun SpecLookupScreen(
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
                         "Find the specs on any platform, then come back and tap the edit button to fill them in. " +
-                        "Or use the Daily Spec Challenge (🎲) to fill them in one at a time.",
+                        "Or use the Random Spec Challenge (🎲) to fill them in one at a time.",
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )

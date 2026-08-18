@@ -13,6 +13,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.guitarvault.app.data.model.Guitar
+import com.guitarvault.app.data.model.GuitarStatus
 import com.guitarvault.app.ui.viewmodel.CollectionViewModel
 import kotlinx.coroutines.launch
 import java.util.Random
@@ -95,11 +96,12 @@ data class SpecChallenge(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun DailySpecScreen(
+fun RandomSpecScreen(
     onBack: () -> Unit,
     viewModel: CollectionViewModel = viewModel()
 ) {
-    val allGuitars by viewModel.guitars.collectAsState()
+    // Unfiltered list — includes Owned, Sold and Wishlist guitars
+    val allGuitars by viewModel.allGuitars.collectAsState()
     val scope = rememberCoroutineScope()
     val random = remember { Random() }
 
@@ -118,7 +120,7 @@ fun DailySpecScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Daily Spec Challenge") },
+                title = { Text("Random Spec Challenge") },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.Default.ArrowBack, contentDescription = "Back")
@@ -137,7 +139,7 @@ fun DailySpecScreen(
             if (allGuitars.isEmpty()) {
                 Text("Add guitars to your collection first!", style = MaterialTheme.typography.titleMedium)
                 Spacer(modifier = Modifier.height(16.dp))
-                Text("The daily challenge picks a random guitar and asks you to fill in one missing spec.",
+                Text("The challenge picks a random guitar from your collection — owned, sold or wishlist — and asks you to fill in one missing spec.",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant)
             } else if (challenge == null) {
@@ -146,6 +148,13 @@ fun DailySpecScreen(
             } else {
                 val guitar = challenge!!.guitar
                 val field = challenge!!.field
+
+                // Derive status (backward compat: old guitars use isSold/isWishlist booleans)
+                val guitarStatus = when {
+                    guitar.isSold -> GuitarStatus.SOLD
+                    guitar.isWishlist -> GuitarStatus.WISHLIST
+                    else -> guitar.status
+                }
 
                 // Guitar emoji + name
                 Text("🎸", style = MaterialTheme.typography.displayLarge)
@@ -156,6 +165,25 @@ fun DailySpecScreen(
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.primary
                 )
+
+                // Show which list the guitar belongs to (Sold / Wishlist)
+                if (guitarStatus != GuitarStatus.OWNED) {
+                    Spacer(modifier = Modifier.height(6.dp))
+                    Surface(
+                        shape = MaterialTheme.shapes.small,
+                        color = if (guitarStatus == GuitarStatus.SOLD)
+                            MaterialTheme.colorScheme.errorContainer
+                        else
+                            MaterialTheme.colorScheme.tertiaryContainer
+                    ) {
+                        Text(
+                            text = if (guitarStatus == GuitarStatus.SOLD) "Sold guitar" else "Wishlist guitar",
+                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 3.dp),
+                            style = MaterialTheme.typography.labelMedium,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                    }
+                }
 
                 Spacer(modifier = Modifier.height(24.dp))
 

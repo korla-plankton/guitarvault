@@ -32,8 +32,9 @@ A comprehensive Android application for guitar collectors to track their collect
 - Condition history with notes and issue tracking
 - Maintenance log: string changes, setups, repairs, refrets, refinishes, electronics, hardware, cleaning, inspections
 
-### 🎲 Daily Spec Challenge (Gamification)
-- Random guitar + random unfilled spec on app launch
+### 🎲 Random Spec Challenge (Gamification)
+- Random guitar + random unfilled spec — from owned, sold, or wishlist guitars
+- Run it as often as you want; reroll any time
 - Collection completeness progress bar
 - Fill in specs one at a time, gamified
 

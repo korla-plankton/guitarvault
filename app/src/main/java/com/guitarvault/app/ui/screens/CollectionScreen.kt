@@ -36,7 +36,7 @@ import kotlinx.coroutines.withContext
 fun CollectionScreen(
     onGuitarClick: (String) -> Unit,
     onAddGuitar: (GuitarStatus) -> Unit,
-    onDailySpec: () -> Unit = {},
+    onRandomSpec: () -> Unit = {},
     onLegal: () -> Unit = {},
     viewModel: CollectionViewModel = viewModel()
 ) {
@@ -123,8 +123,8 @@ fun CollectionScreen(
             TopAppBar(
                 title = { Text("GuitarVault") },
                 actions = {
-                    IconButton(onClick = onDailySpec) {
-                        Icon(Icons.Default.Casino, contentDescription = "Daily Spec Challenge")
+                    IconButton(onClick = onRandomSpec) {
+                        Icon(Icons.Default.Casino, contentDescription = "Random Spec Challenge")
                     }
                     IconButton(onClick = onLegal) {
                         Icon(Icons.Default.Info, contentDescription = "Legal / Privacy")
