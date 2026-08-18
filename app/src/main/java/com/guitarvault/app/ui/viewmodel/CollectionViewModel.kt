@@ -378,8 +378,8 @@ class CollectionViewModel(
     fun importCollectionJson(text: String): kotlinx.coroutines.Deferred<Boolean> =
         viewModelScope.async { storage.importFromJson(text) }
 
-    /** Export collection WITH photos as a ZIP to the given output stream. Returns photo count or -1 on failure. */
-    fun exportCollectionZip(outputStream: java.io.OutputStream): kotlinx.coroutines.Deferred<Int> =
+    /** Export collection WITH photos as a ZIP to the given output stream. Returns null on failure. */
+    fun exportCollectionZip(outputStream: java.io.OutputStream): kotlinx.coroutines.Deferred<com.guitarvault.app.data.storage.JsonStorage.ZipExportResult?> =
         viewModelScope.async { storage.exportZipTo(outputStream) }
 
     /** Import a backup from a stream: ZIP (with photos) or legacy JSON. Returns false if invalid. */

@@ -63,17 +63,21 @@ fun CollectionScreen(
     ) { uri ->
         if (uri != null && isExporting) {
             scope.launch {
-                val written = try {
+                val result = try {
                     val stream = context.contentResolver.openOutputStream(uri)
-                    if (stream == null) -1
+                    if (stream == null) null
                     else viewModel.exportCollectionZip(stream).await().also { stream.close() }
                 } catch (e: Exception) {
                     android.util.Log.e("CollectionScreen", "Export write failed", e)
-                    -1
+                    null
                 }
                 isExporting = false
-                exportStatus = if (written >= 0) "✅ Collection exported with $written photo${if (written == 1) "" else "s"}"
-                                else "❌ Export failed — could not write file"
+                exportStatus = if (result != null) {
+                    val n = result.totalPhotos
+                    "✅ Collection exported with $n photo${if (n == 1) "" else "s"}"
+                } else {
+                    "❌ Export failed — could not write file"
+                }
             }
         } else {
             isExporting = false

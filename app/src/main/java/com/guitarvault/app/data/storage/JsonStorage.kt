@@ -148,52 +148,68 @@ class JsonStorage private constructor(private val context: Context) {
         false
     }
 
+    /** Result of a ZIP export: how many photos made it into the backup, by storage type. */
+    data class ZipExportResult(
+        val filePhotos: Int,      // camera captures etc. stored as files under photos/
+        val embeddedPhotos: Int   // pasted/picked photos stored as base64 inside collection.json
+    ) {
+        val totalPhotos: Int get() = filePhotos + embeddedPhotos
+    }
+
     /**
      * Export the collection WITH photos as a ZIP (for backup with images).
      * Layout: collection.json at the root + every referenced photo file under photos/.
-     * Base64 photos live inside the JSON already.
-     * Returns the number of photo files written, or -1 on failure.
+     * Base64 photos (pasted/picked) live inside the JSON already.
+     * Returns null on failure.
      */
-    suspend fun exportZipTo(targetStream: OutputStream): Int = withContext(Dispatchers.IO) {
+    suspend fun exportZipTo(targetStream: OutputStream): ZipExportResult? = withContext(Dispatchers.IO) {
         try {
             val data = _collection.value
 
-            // Collect all photo files referenced by the collection
+            // Collect all photo files referenced by the collection, and count embedded ones
             val photoFiles = mutableListOf<File>()
+            var embeddedPhotos = 0
             data.guitars.forEach { guitar ->
                 guitar.photos.forEach { photo ->
-                    if (photo.filePath.isNotBlank()) photoFiles.add(getPhotoFile(photo.filePath))
-                    photo.originalFilePath?.takeIf { it.isNotBlank() && it != photo.filePath }?.let {
-                        photoFiles.add(getPhotoFile(it))
+                    var countedAsFile = false
+                    if (photo.filePath.isNotBlank()) {
+                        val file = getPhotoFile(photo.filePath)
+                        if (file.exists()) {
+                            photoFiles.add(file)
+                            countedAsFile = true
+                        } else {
+                            Log.w(TAG, "Photo file missing on disk, image will be lost: ${photo.filePath}")
+                        }
                     }
+                    photo.originalFilePath?.takeIf { it.isNotBlank() && it != photo.filePath }?.let {
+                        val orig = getPhotoFile(it)
+                        if (orig.exists()) photoFiles.add(orig)
+                    }
+                    if (!countedAsFile && photo.base64Data.isNotBlank()) embeddedPhotos++
                 }
             }
 
             ZipOutputStream(BufferedOutputStream(targetStream)).use { zip ->
-                // 1. Collection JSON
+                // 1. Collection JSON (also carries all base64-embedded photos)
                 zip.putNextEntry(ZipEntry(COLLECTION_FILE))
                 zip.write(json.encodeToString(data).toByteArray(Charsets.UTF_8))
                 zip.closeEntry()
 
                 // 2. Photo files (relative paths, e.g. photos/photo_123.jpg)
-                var written = 0
+                var filePhotos = 0
                 photoFiles.distinctBy { it.path }.forEach { file ->
-                    if (file.exists()) {
-                        val entryName = file.relativeTo(context.filesDir).path
-                        zip.putNextEntry(ZipEntry(entryName))
-                        file.inputStream().use { it.copyTo(zip) }
-                        zip.closeEntry()
-                        written++
-                    } else {
-                        Log.w(TAG, "Photo file missing, skipped in export: ${file.path}")
-                    }
+                    val entryName = file.relativeTo(context.filesDir).path
+                    zip.putNextEntry(ZipEntry(entryName))
+                    file.inputStream().use { it.copyTo(zip) }
+                    zip.closeEntry()
+                    filePhotos++
                 }
-                Log.i(TAG, "Exported ZIP: ${data.guitars.size} guitars, $written photo files")
-                written
+                Log.i(TAG, "Exported ZIP: ${data.guitars.size} guitars, $filePhotos photo files, $embeddedPhotos embedded")
+                ZipExportResult(filePhotos = filePhotos, embeddedPhotos = embeddedPhotos)
             }
         } catch (e: Exception) {
             Log.e(TAG, "ZIP export failed", e)
-            -1
+            null
         }
     }
 
