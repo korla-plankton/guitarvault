@@ -11,14 +11,14 @@ import com.guitarvault.app.ui.screens.*
 object Routes {
     const val COLLECTION = "collection"
     const val GUITAR_DETAIL = "guitar_detail/{guitarId}"
-    const val ADD_EDIT_GUITAR = "add_edit_guitar/{guitarId}"
+    const val ADD_EDIT_GUITAR = "add_edit_guitar/{guitarId}/{status}"
     const val CAMERA = "camera/{guitarId}"
     const val SPEC_LOOKUP = "spec_lookup/{guitarId}"
     const val DAILY_SPEC = "daily_spec"
     const val LEGAL = "legal"
 
     fun guitarDetail(id: String) = "guitar_detail/$id"
-    fun addEditGuitar(id: String?) = "add_edit_guitar/${id ?: "new"}"
+    fun addEditGuitar(id: String?, status: String = "OWNED") = "add_edit_guitar/${id ?: "new"}/$status"
     fun camera(id: String) = "camera/$id"
     fun specLookup(id: String) = "spec_lookup/$id"
 }
@@ -31,7 +31,7 @@ fun AppNavigation() {
         composable(Routes.COLLECTION) {
             CollectionScreen(
                 onGuitarClick = { id -> navController.navigate(Routes.guitarDetail(id)) },
-                onAddGuitar = { navController.navigate(Routes.addEditGuitar(null)) },
+                onAddGuitar = { status -> navController.navigate(Routes.addEditGuitar(null, status.name)) },
                 onDailySpec = { navController.navigate(Routes.DAILY_SPEC) },
                 onLegal = { navController.navigate(Routes.LEGAL) }
             )
@@ -52,12 +52,18 @@ fun AppNavigation() {
         }
         composable(
             Routes.ADD_EDIT_GUITAR,
-            arguments = listOf(navArgument("guitarId") { type = NavType.StringType })
+            arguments = listOf(
+                navArgument("guitarId") { type = NavType.StringType },
+                navArgument("status") { type = NavType.StringType }
+            )
         ) { backStackEntry ->
             val guitarIdArg = backStackEntry.arguments?.getString("guitarId") ?: return@composable
             val guitarId = if (guitarIdArg == "new") null else guitarIdArg
+            val statusArg = backStackEntry.arguments?.getString("status") ?: "OWNED"
+            val initialStatus = try { com.guitarvault.app.data.model.GuitarStatus.valueOf(statusArg) } catch (e: Exception) { com.guitarvault.app.data.model.GuitarStatus.OWNED }
             AddEditGuitarScreen(
                 guitarId = guitarId,
+                initialStatus = initialStatus,
                 onBack = { navController.popBackStack() }
             )
         }

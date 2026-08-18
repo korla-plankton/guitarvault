@@ -29,7 +29,7 @@ import com.guitarvault.app.ui.viewmodel.SortMode
 @Composable
 fun CollectionScreen(
     onGuitarClick: (String) -> Unit,
-    onAddGuitar: () -> Unit,
+    onAddGuitar: (GuitarStatus) -> Unit,
     onDailySpec: () -> Unit = {},
     onLegal: () -> Unit = {},
     viewModel: CollectionViewModel = viewModel()
@@ -40,6 +40,8 @@ fun CollectionScreen(
     val viewMode by viewModel.viewMode.collectAsState()
     val filterType by viewModel.filterType.collectAsState()
     val sortMode by viewModel.sortMode.collectAsState()
+
+    val statusFilter by viewModel.statusFilter.collectAsState()
 
     var showFilterMenu by remember { mutableStateOf(false) }
     var showSortMenu by remember { mutableStateOf(false) }
@@ -85,7 +87,7 @@ fun CollectionScreen(
         },
         floatingActionButton = {
             ExtendedFloatingActionButton(
-                onClick = onAddGuitar,
+                onClick = { onAddGuitar(statusFilter) },
                 icon = { Icon(Icons.Default.Add, contentDescription = null) },
                 text = { Text("Add Guitar") }
             )
@@ -98,7 +100,6 @@ fun CollectionScreen(
             }
 
             // Status tabs
-            val statusFilter by viewModel.statusFilter.collectAsState()
             TabRow(selectedTabIndex = statusFilter.ordinal) {
                 GuitarStatus.entries.forEach { status ->
                     Tab(
@@ -132,7 +133,7 @@ fun CollectionScreen(
 
             // Content based on view mode
             if (guitars.isEmpty()) {
-                EmptyState(onAddGuitar = onAddGuitar)
+                EmptyState(onAddGuitar = { onAddGuitar(statusFilter) })
             } else {
                 when (viewMode) {
                     CollectionViewModel.CollectionViewMode.LIST -> {

@@ -22,6 +22,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 @Composable
 fun AddEditGuitarScreen(
     guitarId: String?,
+    initialStatus: GuitarStatus = GuitarStatus.OWNED,
     onBack: () -> Unit,
     viewModel: CollectionViewModel = viewModel()
 ) {
@@ -83,7 +84,7 @@ fun AddEditGuitarScreen(
                 existing?.isSold == true -> GuitarStatus.SOLD
                 existing?.isWishlist == true -> GuitarStatus.WISHLIST
                 existing != null -> existing.status
-                else -> GuitarStatus.OWNED
+                else -> initialStatus
             }
         )
     }
