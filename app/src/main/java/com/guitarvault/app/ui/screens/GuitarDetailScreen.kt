@@ -42,8 +42,9 @@ fun GuitarDetailScreen(
     onSpecLookup: (String) -> Unit,
     viewModel: CollectionViewModel = viewModel()
 ) {
-    val guitars by viewModel.guitars.collectAsState()
-    val guitar = remember(guitarId, guitars) { guitars.find { it.id == guitarId } }
+    // Use ALL guitars from the repository (not the status-filtered list)
+    val allGuitars by viewModel.allGuitars.collectAsState()
+    val guitar = remember(guitarId, allGuitars) { allGuitars.find { it.id == guitarId } }
     var selectedTab by remember { mutableStateOf(DetailTab.SPECS) }
     var showDeleteConfirm by remember { mutableStateOf(false) }
     var showSoldDialog by remember { mutableStateOf(false) }

@@ -34,6 +34,11 @@ class CollectionViewModel(
     private val _statusFilter = MutableStateFlow(GuitarStatus.OWNED)
     val statusFilter: StateFlow<GuitarStatus> = _statusFilter.asStateFlow()
 
+    // Unfiltered list — used by detail screen to find any guitar regardless of active tab
+    val allGuitars: StateFlow<List<Guitar>> = repository.guitars.stateIn(
+        viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList()
+    )
+
     val guitars: StateFlow<List<Guitar>> = combine(
         repository.guitars,
         _searchQuery,
