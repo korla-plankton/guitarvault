@@ -47,11 +47,20 @@ fun CollectionScreen(
 
     val statusFilter by viewModel.statusFilter.collectAsState()
 
+    // Unfiltered list — used by the import confirmation dialog to report the
+    // true size of the collection across all statuses (owned/sold/wishlist)
+    val allGuitars by viewModel.allGuitars.collectAsState()
+
     var showFilterMenu by remember { mutableStateOf(false) }
     var showSortMenu by remember { mutableStateOf(false) }
     var showExportMenu by remember { mutableStateOf(false) }
     var exportStatus by remember { mutableStateOf<String?>(null) }
     var isExporting by remember { mutableStateOf(false) }
+
+    // Import confirmation: warn that importing replaces the whole collection.
+    // pendingImportUri holds the chosen backup file while the dialog is up.
+    var pendingImportUri by remember { mutableStateOf<android.net.Uri?>(null) }
+    var isImporting by remember { mutableStateOf(false) }
 
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -84,23 +93,12 @@ fun CollectionScreen(
         }
     }
 
-    // SAF import: pick a backup file (ZIP with photos, or legacy JSON), replace the collection
+    // SAF import: pick a backup file (ZIP with photos, or legacy JSON), then confirm
     val importLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.OpenDocument()
     ) { uri ->
         if (uri != null) {
-            scope.launch {
-                val ok = try {
-                    val stream = context.contentResolver.openInputStream(uri)
-                    if (stream == null) false
-                    else viewModel.importCollectionBackup(stream).await()
-                } catch (e: Exception) {
-                    android.util.Log.e("CollectionScreen", "Import failed", e)
-                    false
-                }
-                exportStatus = if (ok) "✅ Collection imported successfully"
-                               else "❌ Import failed — invalid backup file"
-            }
+            pendingImportUri = uri
         }
     }
 
@@ -110,6 +108,54 @@ fun CollectionScreen(
             snackbarHostState.showSnackbar(it)
             exportStatus = null
         }
+    }
+
+    // Import confirmation dialog — importing REPLACES the current collection
+    if (pendingImportUri != null) {
+        AlertDialog(
+            onDismissRequest = { if (!isImporting) pendingImportUri = null },
+            title = { Text("Import Collection?") },
+            text = {
+                Column {
+                    Text("This will replace your current collection — ${allGuitars.size} guitar${if (allGuitars.size == 1) "" else "s"} — with the contents of the backup file.")
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        "This cannot be undone. Export your current collection first if you want to keep it.",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.error
+                    )
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        val uri = pendingImportUri
+                        isImporting = true
+                        pendingImportUri = null
+                        scope.launch {
+                            val ok = if (uri == null) false else try {
+                                val stream = context.contentResolver.openInputStream(uri)
+                                if (stream == null) false
+                                else viewModel.importCollectionBackup(stream).await()
+                            } catch (e: Exception) {
+                                android.util.Log.e("CollectionScreen", "Import failed", e)
+                                false
+                            }
+                            isImporting = false
+                            exportStatus = if (ok) "✅ Collection imported successfully"
+                                           else "❌ Import failed — invalid backup file"
+                        }
+                    },
+                    enabled = !isImporting
+                ) { Text("Import") }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = { pendingImportUri = null },
+                    enabled = !isImporting
+                ) { Text("Cancel") }
+            }
+        )
     }
 
     Scaffold(
