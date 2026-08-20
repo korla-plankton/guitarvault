@@ -171,12 +171,6 @@ fun CollectionScreen(
                     )
                 },
                 actions = {
-                    IconButton(onClick = onRandomSpec) {
-                        Icon(Icons.Default.Casino, contentDescription = "Random Spec Challenge")
-                    }
-                    IconButton(onClick = onLegal) {
-                        Icon(Icons.Default.Info, contentDescription = "Legal / Privacy")
-                    }
                     IconButton(onClick = { showFilterMenu = true }) {
                         Icon(Icons.Default.FilterList, contentDescription = "Filter")
                     }
@@ -205,8 +199,23 @@ fun CollectionScreen(
                             )
                         }
                     }
-                    // Export/Import menu
+                    // Overflow menu: challenge, legal, export/import
                     DropdownMenu(expanded = showExportMenu, onDismissRequest = { showExportMenu = false }) {
+                        DropdownMenuItem(
+                            text = { Text("🎲 Random Spec Challenge") },
+                            onClick = {
+                                showExportMenu = false
+                                onRandomSpec()
+                            }
+                        )
+                        DropdownMenuItem(
+                            text = { Text("⚖️ Legal / Privacy") },
+                            onClick = {
+                                showExportMenu = false
+                                onLegal()
+                            }
+                        )
+                        HorizontalDivider()
                         DropdownMenuItem(
                             text = { Text("📤 Export Collection (ZIP)") },
                             onClick = {
