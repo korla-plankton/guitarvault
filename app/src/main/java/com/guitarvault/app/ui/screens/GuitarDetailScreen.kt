@@ -27,8 +27,8 @@ import com.guitarvault.app.ui.viewmodel.CollectionViewModel
 enum class DetailTab(val label: String) {
     SPECS("Specs"),
     PHOTOS("Photos"),
-    VALUE("Value & Insurance"),
-    CONDITION("Condition & Maintenance")
+    VALUE("💰 Value"),
+    CONDITION("🔧 Condition")
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -125,7 +125,7 @@ fun GuitarDetailScreen(
                     Tab(
                         selected = selectedTab == tab,
                         onClick = { selectedTab = tab },
-                        text = { Text(tab.label) }
+                        text = { Text(tab.label, maxLines = 1) }
                     )
                 }
             }

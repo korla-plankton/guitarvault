@@ -162,7 +162,14 @@ fun CollectionScreen(
         snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             TopAppBar(
-                title = { Text("GuitarVault") },
+                title = {
+                    Text(
+                        "GuitarVault",
+                        style = MaterialTheme.typography.titleLarge,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                },
                 actions = {
                     IconButton(onClick = onRandomSpec) {
                         Icon(Icons.Default.Casino, contentDescription = "Random Spec Challenge")
