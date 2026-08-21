@@ -14,6 +14,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.guitarvault.app.data.model.Guitar
 import com.guitarvault.app.data.model.GuitarStatus
+import com.guitarvault.app.data.model.formatScaleLength
 import com.guitarvault.app.ui.viewmodel.CollectionViewModel
 import kotlinx.coroutines.launch
 import java.util.Random
@@ -48,8 +49,8 @@ object SpecFields {
             { it.fretboardWood }, { g, v -> g.copy(fretboardWood = v) }),
         SpecField("neckProfile", "Neck Profile", "e.g. C, Slim Taper",
             { it.neckProfile }, { g, v -> g.copy(neckProfile = v) }),
-        SpecField("scaleLength", "Scale Length (mm)", "e.g. 648",
-            { it.scaleLength?.toString() ?: "" }, { g, v -> g.copy(scaleLength = v.toDoubleOrNull()) }),
+        SpecField("scaleLength", "Scale Length (inches)", "e.g. 25.5",
+            { it.scaleLength?.let { len -> formatScaleLength(len) } ?: "" }, { g, v -> g.copy(scaleLength = v.toDoubleOrNull()) }),
         SpecField("numberOfFrets", "Number of Frets", "e.g. 22",
             { it.numberOfFrets.toString() }, { g, v -> g.copy(numberOfFrets = v.toIntOrNull() ?: g.numberOfFrets) }),
         SpecField("nutWidth", "Nut Width (mm)", "e.g. 43",

@@ -69,8 +69,14 @@ class JsonStorage private constructor(private val context: Context) {
             if (file.exists()) {
                 val text = file.readText()
                 if (text.isNotBlank()) {
-                    _collection.value = json.decodeFromString<CollectionData>(text)
-                    Log.i(TAG, "Loaded collection: ${_collection.value.guitars.size} guitars, ${_collection.value.wishlist.size} wishlist items")
+                    val raw = json.decodeFromString<CollectionData>(text)
+                    val loaded = migrate(raw)
+                    _collection.value = loaded
+                    if (loaded.version > raw.version) {
+                        // Persist migration changes back to disk
+                        saveToDisk(loaded)
+                    }
+                    Log.i(TAG, "Loaded collection: ${loaded.guitars.size} guitars, ${loaded.wishlist.size} wishlist items")
                 }
             } else {
                 _collection.value = CollectionData()
@@ -80,6 +86,26 @@ class JsonStorage private constructor(private val context: Context) {
             Log.e(TAG, "Failed to load collection", e)
             _collection.value = CollectionData()
         }
+    }
+
+    /**
+     * Migrate legacy collection data to the current schema.
+     * v1 -> v2: scale length was stored in mm; now decimal inches.
+     * Values > 100 are unambiguously mm (shortest real scales are ~20" / 508mm).
+     */
+    private fun migrate(data: CollectionData): CollectionData {
+        if (data.version >= 2) return data
+        val migrated = data.copy(
+            version = 2,
+            guitars = data.guitars.map { g ->
+                val len = g.scaleLength
+                if (len != null && len > 100) {
+                    g.copy(scaleLength = Math.round(len / 25.4 * 100) / 100.0)
+                } else g
+            }
+        )
+        Log.i(TAG, "Migrated collection data v${data.version} -> v2 (scale length mm -> inches)")
+        return migrated
     }
 
     private fun saveToDisk(data: CollectionData) {
@@ -140,7 +166,7 @@ class JsonStorage private constructor(private val context: Context) {
 
     /** Import collection from a JSON string (replaces current data). */
     suspend fun importFromJson(text: String): Boolean = try {
-        val imported = json.decodeFromString<CollectionData>(text)
+        val imported = migrate(json.decodeFromString<CollectionData>(text))
         update { imported }
         true
     } catch (e: Exception) {

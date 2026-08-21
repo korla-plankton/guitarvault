@@ -8,6 +8,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.guitarvault.app.data.model.Guitar
+import com.guitarvault.app.data.model.formatScaleLength
 import com.guitarvault.app.ui.components.SpecRow
 import com.guitarvault.app.ui.components.SpecSection
 
@@ -56,7 +57,7 @@ fun SpecsTab(guitar: Guitar, modifier: Modifier = Modifier) {
             SpecRow("Fretboard Wood", guitar.fretboardWood)
             SpecRow("Neck Profile", guitar.neckProfile)
             SpecRow("Neck Construction", guitar.neckConstruction)
-            SpecRow("Scale Length", guitar.scaleLength?.let { "${it} mm" } ?: "")
+            SpecRow("Scale Length", guitar.scaleLength?.let { "${formatScaleLength(it)}\"" } ?: "")
             SpecRow("Number of Frets", guitar.numberOfFrets.toString())
             SpecRow("Fret Size", guitar.fretSize)
             SpecRow("Fret Material", guitar.fretMaterial)

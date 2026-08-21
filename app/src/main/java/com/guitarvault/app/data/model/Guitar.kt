@@ -202,7 +202,7 @@ data class Guitar(
     val fretboardWood: String = "",      // e.g. "Rosewood", "Maple", "Ebony"
     val neckProfile: String = "",        // e.g. "C", "D", "V", "Slim Taper"
     val neckConstruction: String = "",   // bolt-on, set neck, neck-through
-    val scaleLength: Double? = null,     // mm e.g. 648 for Fender, 628 for Gibson
+    val scaleLength: Double? = null,     // inches e.g. 25.5 for Fender, 24.75 for Gibson
     val numberOfFrets: Int = 22,
     val fretSize: String = "",           // e.g. "Medium Jumbo", "Jumbo", "Vintage"
     val fretMaterial: String = "",       // e.g. "Nickel Silver", "Stainless Steel"
@@ -377,6 +377,15 @@ enum class WishlistPriority(val displayName: String, val sortOrder: Int) {
 data class CollectionData(
     val guitars: List<Guitar> = emptyList(),
     val wishlist: List<WishlistItem> = emptyList(),
-    val version: Int = 1,
+    val version: Int = 2,
     val lastModified: Long = System.currentTimeMillis()
 )
+
+/**
+ * Format a scale length in decimal inches for display, e.g. 25.5 -> "25.5".
+ * Whole numbers drop the trailing .0 (25.0 -> "25").
+ */
+fun formatScaleLength(inches: Double): String {
+    val rounded = Math.round(inches * 100) / 100.0
+    return if (rounded == Math.floor(rounded)) "%.0f".format(rounded) else rounded.toString()
+}

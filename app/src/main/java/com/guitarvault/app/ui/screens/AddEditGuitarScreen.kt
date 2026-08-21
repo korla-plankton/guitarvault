@@ -192,7 +192,7 @@ fun AddEditGuitarScreen(
                 LabeledTextField("Fretboard Wood", fretboardWood, { fretboardWood = it })
                 LabeledTextField("Neck Profile", neckProfile, { neckProfile = it })
                 LabeledTextField("Neck Construction", neckConstruction, { neckConstruction = it })
-                LabeledNumberField("Scale Length (mm)", scaleLengthStr, { scaleLengthStr = it })
+                LabeledNumberField("Scale Length (inches)", scaleLengthStr, { scaleLengthStr = it }, placeholder = "e.g. 25.5")
                 LabeledNumberField("Number of Frets", numberOfFretsStr, { numberOfFretsStr = it })
                 LabeledTextField("Fret Size", fretSize, { fretSize = it })
                 LabeledTextField("Fret Material", fretMaterial, { fretMaterial = it })
