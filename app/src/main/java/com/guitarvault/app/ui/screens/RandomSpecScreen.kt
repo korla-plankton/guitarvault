@@ -2,16 +2,20 @@ package com.guitarvault.app.ui.screens
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
+import android.content.Intent
+import android.net.Uri
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Casino
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -107,6 +111,7 @@ fun RandomSpecScreen(
 ) {
     // Unfiltered list — includes Owned, Sold and Wishlist guitars
     val allGuitars by viewModel.allGuitars.collectAsState()
+    val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val random = remember { Random() }
 
@@ -240,6 +245,32 @@ fun RandomSpecScreen(
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
+                }
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                // Look up this specific spec online
+                OutlinedButton(
+                    onClick = {
+                        // e.g. "Yamaha AEX500 scale length specs" — drop unit hints like "(inches)"
+                        val fieldTerm = field.label.substringBefore("(").trim()
+                        val query = buildString {
+                            append(guitar.brand)
+                            if (guitar.model.isNotBlank()) append(" ${guitar.model}")
+                            if (guitar.subModel.isNotBlank()) append(" ${guitar.subModel}")
+                            if (guitar.year != null) append(" ${guitar.year}")
+                            append(" $fieldTerm specs")
+                        }
+                        val url = "https://www.google.com/search?q=${Uri.encode(query)}"
+                        runCatching {
+                            context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
+                        }
+                    },
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Icon(Icons.Default.Search, contentDescription = null)
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Look It Up")
                 }
 
                 Spacer(modifier = Modifier.height(20.dp))
