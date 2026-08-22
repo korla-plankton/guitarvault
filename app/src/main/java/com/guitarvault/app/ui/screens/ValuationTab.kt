@@ -19,8 +19,10 @@ import com.guitarvault.app.ui.components.SpecSection
 import com.guitarvault.app.ui.components.SpecRow
 import com.guitarvault.app.ui.components.formatCurrency
 import java.text.SimpleDateFormat
+import java.util.Calendar
 import java.util.Date
 import java.util.Locale
+import java.util.TimeZone
 
 @Composable
 fun ValuationTab(
@@ -192,6 +194,7 @@ fun ValuationTab(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun PurchaseInfoDialog(
     current: Valuation,
@@ -201,6 +204,12 @@ private fun PurchaseInfoDialog(
     var priceStr by remember { mutableStateOf(current.purchasePrice?.toString() ?: "") }
     var source by remember { mutableStateOf(current.purchaseSource) }
     var estimatedStr by remember { mutableStateOf(current.estimatedValue?.toString() ?: "") }
+
+    // Purchase date: user-chosen, never auto-filled with today's date —
+    // most users are cataloguing guitars they bought long ago.
+    var purchaseDate by remember { mutableStateOf(current.purchaseDate) }
+    var showDatePicker by remember { mutableStateOf(false) }
+    val df = SimpleDateFormat("MMM d, yyyy", Locale.getDefault())
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -212,6 +221,12 @@ private fun PurchaseInfoDialog(
                     label = { Text("Purchase Price ($)") }, singleLine = true,
                     modifier = Modifier.fillMaxWidth()
                 )
+                OutlinedButton(
+                    onClick = { showDatePicker = true },
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(purchaseDate?.let { "Purchase Date: ${df.format(Date(it))}" } ?: "Purchase Date: not set")
+                }
                 OutlinedTextField(
                     value = source, onValueChange = { source = it },
                     label = { Text("Purchase Source (store, online, etc.)") }, singleLine = true,
@@ -228,7 +243,7 @@ private fun PurchaseInfoDialog(
             TextButton(onClick = {
                 onConfirm(current.copy(
                     purchasePrice = priceStr.toDoubleOrNull(),
-                    purchaseDate = if (current.purchaseDate == null) System.currentTimeMillis() else current.purchaseDate,
+                    purchaseDate = purchaseDate,
                     purchaseSource = source,
                     estimatedValue = estimatedStr.toDoubleOrNull()
                 ))
@@ -236,6 +251,38 @@ private fun PurchaseInfoDialog(
         },
         dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } }
     )
+
+    if (showDatePicker) {
+        val datePickerState = rememberDatePickerState(
+            initialSelectedDateMillis = purchaseDate
+        )
+        DatePickerDialog(
+            onDismissRequest = { showDatePicker = false },
+            confirmButton = {
+                TextButton(onClick = {
+                    purchaseDate = datePickerState.selectedDateMillis?.let { utcMidnightToLocal(it) }
+                    showDatePicker = false
+                }) { Text("OK") }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDatePicker = false }) { Text("Cancel") }
+            }
+        ) {
+            DatePicker(state = datePickerState)
+        }
+    }
+}
+
+/**
+ * DatePicker reports selection as UTC midnight millis; in negative-offset
+ * timezones that formats as the previous day. Re-anchor to local midnight.
+ */
+private fun utcMidnightToLocal(utcMillis: Long): Long {
+    val utc = Calendar.getInstance(TimeZone.getTimeZone("UTC")).apply { timeInMillis = utcMillis }
+    val local = Calendar.getInstance().apply {
+        set(utc.get(Calendar.YEAR), utc.get(Calendar.MONTH), utc.get(Calendar.DAY_OF_MONTH), 12, 0, 0)
+    }
+    return local.timeInMillis
 }
 
 @Composable
