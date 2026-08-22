@@ -25,8 +25,8 @@ import com.guitarvault.app.ui.components.PhotoGallery
 import com.guitarvault.app.ui.viewmodel.CollectionViewModel
 
 enum class DetailTab(val label: String) {
-    SPECS("Specs"),
-    PHOTOS("Photos"),
+    SPECS("📐 Specs"),
+    PHOTOS("📷 Photos"),
     VALUE("💰 Value"),
     CONDITION("🔧 Condition")
 }
