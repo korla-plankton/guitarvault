@@ -1,6 +1,7 @@
 package com.guitarvault.app.ui.screens
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Casino
@@ -9,9 +10,12 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import coil.compose.AsyncImage
 import com.guitarvault.app.data.model.Guitar
 import com.guitarvault.app.data.model.GuitarStatus
 import com.guitarvault.app.data.model.formatScaleLength
@@ -157,8 +161,31 @@ fun RandomSpecScreen(
                     else -> guitar.status
                 }
 
-                // Guitar emoji + name
-                Text("🎸", style = MaterialTheme.typography.displayLarge)
+                // Primary photo (or 🎸 fallback when the guitar has no photos)
+                val photoModel = viewModel.getPhotoModel(guitar.primaryPhoto)
+                if (photoModel != null) {
+                    AsyncImage(
+                        model = photoModel,
+                        contentDescription = "Photo of ${guitar.displayName}",
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(180.dp)
+                            .clip(RoundedCornerShape(12.dp))
+                    )
+                } else {
+                    Surface(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(180.dp)
+                            .clip(RoundedCornerShape(12.dp)),
+                        color = MaterialTheme.colorScheme.surfaceVariant
+                    ) {
+                        Box(contentAlignment = Alignment.Center) {
+                            Text("🎸", style = MaterialTheme.typography.displayLarge)
+                        }
+                    }
+                }
                 Spacer(modifier = Modifier.height(12.dp))
                 Text(
                     text = guitar.displayName,
