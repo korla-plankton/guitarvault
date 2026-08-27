@@ -8,9 +8,9 @@ A comprehensive Android application for guitar collectors to track their collect
 - **Deep specifications**: Brand, model, year, body type, woods, pickups, electronics, hardware, scale length, neck profile, finish, serial number, strings, and more
 - **Custom fields**: User-defined fields for anything not pre-built (text, number, date, boolean, URL)
 - **Multiple view modes**: Flat list, grouped by brand, grid gallery
-- **Search, filter & sort**: By name, brand, model, serial number, tags, guitar type; sort by date, name, brand, year, or value
-- **Status tabs**: Owned, Wishlist, Sold — unified in one collection view
-- **Collection stats**: Total guitars, total value, total invested, total insured
+- **Search, filter & sort**: By name, brand, model, serial number, tags, guitar type; sort by date added, name, brand, year, value, or purchase date
+- **Status tabs**: Owned, Wishlist, Sold — unified in one collection view, each with a guitar count badge
+- **Collection stats**: Total guitars, total value, total invested, total insured — with a warning when coverage falls short of value
 - **Spec completeness**: Progress bar on each guitar card showing how complete its specs are
 
 ### 📸 Photo Capture + On-Device AI
@@ -34,9 +34,18 @@ A comprehensive Android application for guitar collectors to track their collect
 
 ### 🎲 Random Spec Challenge (Gamification)
 - Random guitar + random unfilled spec — from owned, sold, or wishlist guitars
+- Shows the guitar's primary photo (Sold/Wishlist items get a status badge)
+- "Look It Up" button opens a Google search tailored to the challenged spec
 - Run it as often as you want; reroll any time
 - Collection completeness progress bar
 - Fill in specs one at a time, gamified
+
+### 📦 Backup & Restore
+- **Export as ZIP**: collection data + all photos in one file (file-based and pasted photos alike)
+- **Import with a choice**: Merge (combine collections, nothing deleted) or Replace (wipe and load)
+- Merge matches guitars by record id or serial number; unmatched records are added; photos, history and maintenance logs are unioned without duplicates
+- Confirmation dialog with live guitar counts before any import touches your data
+- Auto cloud backup disabled — your serial numbers and valuations never silently sync off-device
 
 ### 🔍 Spec Search
 - Search Google, Reverb, or eBay for guitar specs
