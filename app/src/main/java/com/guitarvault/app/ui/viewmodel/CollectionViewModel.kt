@@ -72,6 +72,7 @@ class CollectionViewModel(
                     SortMode.BRAND -> filtered.sortedBy { it.brand.lowercase().ifBlank { "zzz" } }
                     SortMode.YEAR -> filtered.sortedByDescending { it.year ?: 0 }
                     SortMode.VALUE -> filtered.sortedByDescending { it.valuation.currentValue ?: it.valuation.purchasePrice ?: 0.0 }
+                    SortMode.PURCHASE_DATE -> filtered.sortedByDescending { it.valuation.purchaseDate ?: Long.MIN_VALUE }
                 }
             }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
@@ -420,5 +421,6 @@ enum class SortMode(val displayName: String) {
     NAME("Name"),
     BRAND("Brand"),
     YEAR("Year"),
-    VALUE("Value")
+    VALUE("Value"),
+    PURCHASE_DATE("Purchase Date")
 }

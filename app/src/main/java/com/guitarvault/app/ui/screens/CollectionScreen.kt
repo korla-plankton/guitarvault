@@ -56,6 +56,17 @@ fun CollectionScreen(
     // true size of the collection across all statuses (owned/sold/wishlist)
     val allGuitars by viewModel.allGuitars.collectAsState()
 
+    // Per-status guitar counts for the tab badges
+    val statusCounts = remember(allGuitars) {
+        allGuitars.groupingBy { g ->
+            when {
+                g.isSold -> GuitarStatus.SOLD
+                g.isWishlist -> GuitarStatus.WISHLIST
+                else -> g.status
+            }
+        }.eachCount()
+    }
+
     var showFilterMenu by remember { mutableStateOf(false) }
     var showSortMenu by remember { mutableStateOf(false) }
     var showExportMenu by remember { mutableStateOf(false) }
@@ -304,13 +315,14 @@ fun CollectionScreen(
                 StatsBar(stats = stats)
             }
 
-            // Status tabs
+            // Status tabs with count badges
             TabRow(selectedTabIndex = statusFilter.ordinal) {
                 GuitarStatus.entries.forEach { status ->
+                    val count = statusCounts[status] ?: 0
                     Tab(
                         selected = statusFilter == status,
                         onClick = { viewModel.setStatusFilter(status) },
-                        text = { Text(status.displayName) }
+                        text = { Text("${status.displayName} ($count)", maxLines = 1) }
                     )
                 }
             }
@@ -409,14 +421,33 @@ private fun StatsBar(stats: com.guitarvault.app.data.repository.CollectionStats)
         color = MaterialTheme.colorScheme.surfaceVariant,
         modifier = Modifier.fillMaxWidth()
     ) {
-        Row(
-            modifier = Modifier.padding(16.dp),
-            horizontalArrangement = Arrangement.SpaceEvenly
-        ) {
-            StatItem(label = "Guitars", value = stats.totalGuitars.toString())
-            StatItem(label = "Value", value = formatCurrency(stats.totalValue))
-            StatItem(label = "Invested", value = formatCurrency(stats.totalInvested))
-            StatItem(label = "Insured", value = formatCurrency(stats.totalInsured))
+        Column(modifier = Modifier.padding(16.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceEvenly
+            ) {
+                StatItem(label = "Guitars", value = stats.totalGuitars.toString())
+                StatItem(label = "Value", value = formatCurrency(stats.totalValue))
+                StatItem(label = "Invested", value = formatCurrency(stats.totalInvested))
+                StatItem(label = "Insured", value = formatCurrency(stats.totalInsured))
+            }
+
+            // Insurance coverage gap warning — useful for keeping coverage current
+            if (stats.totalGuitars > 0 && stats.totalValue > stats.totalInsured) {
+                Spacer(modifier = Modifier.height(8.dp))
+                val message = if (stats.totalInsured <= 0.0) {
+                    "🛡️ None of your collection's ${formatCurrency(stats.totalValue)} value is insured"
+                } else {
+                    val gap = stats.totalValue - stats.totalInsured
+                    "🛡️ Insured value is ${formatCurrency(gap)} below collection value"
+                }
+                Text(
+                    message,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.error,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
         }
     }
 }
