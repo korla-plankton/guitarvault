@@ -3,8 +3,6 @@ package com.guitarvault.app.camera
 import android.content.Context
 import android.content.Intent
 import android.graphics.Bitmap
-import android.graphics.BitmapFactory
-import android.graphics.Matrix
 import android.net.Uri
 import android.util.Log
 import androidx.camera.core.CameraSelector
@@ -14,7 +12,6 @@ import androidx.camera.core.Preview
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
 import androidx.core.content.ContextCompat
-import androidx.exifinterface.media.ExifInterface
 import androidx.lifecycle.LifecycleOwner
 import com.guitarvault.app.ai.BackgroundRemover
 import com.guitarvault.app.ai.BackgroundRemovalResult
@@ -47,7 +44,7 @@ class CameraCaptureManager(
 
     private val imageCapture: ImageCapture by lazy {
         ImageCapture.Builder()
-            .setCaptureMode(ImageCapture.CAPTURE_MODE_MAXIMIZE_QUALITY)
+            .setCaptureMode(ImageCapture.CAPTURE_MODE_MINIMIZE_LATENCY)
             .build()
     }
 
@@ -79,46 +76,32 @@ class CameraCaptureManager(
 
     /**
      * Capture a photo and save it (no auto background removal).
-     * Background removal is now a manual action via the magic wand button.
+     * Background removal is a manual action via the magic wand button.
+     *
+     * Snappy path: the JPEG that CameraX writes is kept as-is — no decode +
+     * PNG re-encode round trip. Orientation lives in the EXIF tag, which
+     * every display path we use honours (Coil, FullScreenPhotoViewer, the
+     * segmentation pipeline). Keeping the JPEG also shrinks files ~5x.
      */
     suspend fun capturePhoto(
         outputFile: File,
         onProgress: ((String) -> Unit)? = null
     ): CaptureResult {
         onProgress?.invoke("Capturing photo...")
-        val tempFile = File(context.cacheDir, "capture_${System.currentTimeMillis()}.jpg")
 
-        // Step 1: Capture photo with CameraX
-        val captureSuccess = capturePhotoInternal(tempFile)
-        if (!captureSuccess) {
+        val success = withContext(Dispatchers.IO) {
+            capturePhotoInternal(outputFile)
+        }
+        if (!success) {
             return CaptureResult.Error("Failed to capture photo")
         }
-
-        // Step 2: Load captured bitmap and correct its orientation.
-        // CameraX writes JPEGs in sensor orientation with rotation recorded only in
-        // the EXIF tag; BitmapFactory ignores that tag, so portrait shots decode
-        // sideways. Read the tag and rotate the pixels before re-saving (PNG has no
-        // EXIF, so the rotation must be baked in here).
-        val decoded = BitmapFactory.decodeFile(tempFile.absolutePath)
-            ?: return CaptureResult.Error("Failed to decode captured image")
-        val bitmap = applyExifRotation(tempFile, decoded)
-
-        // Step 3: Save to output file
-        withContext(Dispatchers.IO) {
-            outputFile.outputStream().use { out ->
-                bitmap.compress(Bitmap.CompressFormat.PNG, 100, out)
-            }
-        }
-
-        // Cleanup temp
-        tempFile.delete()
 
         onProgress?.invoke("Done!")
 
         return CaptureResult.Success(
             file = outputFile,
             backgroundRemoved = false,
-            bitmap = bitmap
+            bitmap = null
         )
     }
 
@@ -179,30 +162,6 @@ class CameraCaptureManager(
         }
     }
 
-    /** Rotate a decoded bitmap according to the EXIF orientation tag of the source file. */
-    private fun applyExifRotation(file: File, bitmap: Bitmap): Bitmap {
-        return try {
-            val exif = ExifInterface(file.absolutePath)
-            val rotation = exif.getAttributeInt(
-                ExifInterface.TAG_ORIENTATION,
-                ExifInterface.ORIENTATION_NORMAL
-            )
-            val degrees = when (rotation) {
-                ExifInterface.ORIENTATION_ROTATE_90 -> 90f
-                ExifInterface.ORIENTATION_ROTATE_180 -> 180f
-                ExifInterface.ORIENTATION_ROTATE_270 -> 270f
-                else -> return bitmap
-            }
-            val matrix = Matrix().apply { postRotate(degrees) }
-            val rotated = Bitmap.createBitmap(bitmap, 0, 0, bitmap.width, bitmap.height, matrix, true)
-            if (rotated != bitmap) bitmap.recycle()
-            rotated
-        } catch (e: Exception) {
-            Log.w(TAG, "Failed to read EXIF orientation", e)
-            bitmap
-        }
-    }
-
     fun shutdown() {
         cameraExecutor.shutdown()
     }
@@ -212,7 +171,7 @@ sealed class CaptureResult {
     data class Success(
         val file: File,
         val backgroundRemoved: Boolean,
-        val bitmap: Bitmap
+        val bitmap: Bitmap? = null
     ) : CaptureResult()
     data class Error(val message: String) : CaptureResult()
 }

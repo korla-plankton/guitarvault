@@ -12,6 +12,7 @@ import android.os.Build
 import android.os.IBinder
 import android.util.Log
 import androidx.core.app.NotificationCompat
+import androidx.exifinterface.media.ExifInterface
 import com.google.mlkit.vision.common.InputImage
 import com.google.mlkit.vision.segmentation.subject.SubjectSegmentation
 import com.google.mlkit.vision.segmentation.subject.SubjectSegmenter
@@ -80,8 +81,22 @@ class SegmentationIsolatedService : Service() {
                         return@runBlocking
                     }
 
+                    // CameraX JPEGs carry orientation only in EXIF — decode is
+                    // unrotated, so tell ML Kit the rotation explicitly.
+                    val rotationDegrees = try {
+                        val exif = ExifInterface(inputFile.absolutePath)
+                        when (exif.getAttributeInt(ExifInterface.TAG_ORIENTATION, ExifInterface.ORIENTATION_NORMAL)) {
+                            ExifInterface.ORIENTATION_ROTATE_90 -> 90
+                            ExifInterface.ORIENTATION_ROTATE_180 -> 180
+                            ExifInterface.ORIENTATION_ROTATE_270 -> 270
+                            else -> 0
+                        }
+                    } catch (e: Exception) {
+                        0
+                    }
+
                     val scaled = scaleIfNeeded(bitmap, 1024)
-                    val image = InputImage.fromBitmap(scaled, 0)
+                    val image = InputImage.fromBitmap(scaled, rotationDegrees)
 
                     val result = withTimeoutOrNull(30_000L) {
                         runSegmentation(image)

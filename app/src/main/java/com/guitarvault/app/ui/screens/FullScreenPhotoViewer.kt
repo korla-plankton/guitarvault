@@ -2,7 +2,10 @@ package com.guitarvault.app.ui.screens
 
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
-import androidx.compose.foundation.gestures.detectTransformGestures
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.foundation.gestures.calculatePan
+import androidx.compose.foundation.gestures.calculateZoom
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
@@ -14,6 +17,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
@@ -58,17 +62,37 @@ fun FullScreenPhotoViewer(
                 modifier = Modifier
                     .fillMaxSize()
                     .clipToBounds()
+                    // Gesture policy: pinch always works; single-finger drag pans
+                    // ONLY while zoomed. At scale 1 a horizontal swipe is NOT
+                    // consumed, so the pager receives it and can change pages.
                     .pointerInput(page) {
-                        detectTransformGestures { _, pan, zoom, _ ->
-                            val newScale = (scale * zoom).coerceIn(1f, 5f)
-                            scale = newScale
-                            if (newScale > 1f) {
-                                offsetX += pan.x
-                                offsetY += pan.y
-                            } else {
-                                offsetX = 0f
-                                offsetY = 0f
-                            }
+                        awaitEachGesture {
+                            awaitFirstDown(requireUnconsumed = false)
+                            var pinching = false
+                            do {
+                                val event = awaitPointerEvent()
+                                val pressedCount = event.changes.count { it.pressed }
+                                if (pressedCount > 1) pinching = true
+                                val zoomChange = event.calculateZoom()
+                                val panChange = event.calculatePan()
+
+                                val zooming = zoomChange != 1f
+                                val panningWhileZoomed = scale > 1f && panChange != Offset.Zero
+
+                                if (zooming || panningWhileZoomed || (pinching && scale > 1f)) {
+                                    event.changes.forEach { it.consume() }
+                                    val newScale = (scale * zoomChange).coerceIn(1f, 5f)
+                                    scale = newScale
+                                    if (newScale > 1f) {
+                                        offsetX += panChange.x
+                                        offsetY += panChange.y
+                                    } else {
+                                        offsetX = 0f
+                                        offsetY = 0f
+                                        pinching = false
+                                    }
+                                }
+                            } while (event.changes.any { it.pressed })
                         }
                     }
             ) {

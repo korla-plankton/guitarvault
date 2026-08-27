@@ -16,6 +16,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
@@ -131,7 +132,7 @@ fun CameraScreen(
                                     scope.launch {
                                         val outputFile = java.io.File(
                                             context.filesDir,
-                                            "photos/photo_${System.currentTimeMillis()}.png"
+                                            "photos/photo_${System.currentTimeMillis()}.jpg"
                                         ).also { it.parentFile?.mkdirs() }
 
                                         val result = cameraManager.capturePhoto(
@@ -185,17 +186,35 @@ fun CameraScreen(
                         Text("Grant Permission")
                     }
                 }
-            } else if (isCapturing) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    CircularProgressIndicator()
-                    Spacer(modifier = Modifier.height(16.dp))
-                    Text(captureStatus, style = MaterialTheme.typography.bodyMedium)
-                }
             } else {
                 AndroidView(
                     factory = { previewView },
                     modifier = Modifier.fillMaxSize()
                 )
+                // Slim status overlay while saving — the preview stays visible,
+                // so capture feels instant instead of a blackout + spinner.
+                if (isCapturing) {
+                    Surface(
+                        color = Color.Black.copy(alpha = 0.5f),
+                        shape = MaterialTheme.shapes.medium,
+                        modifier = Modifier
+                            .align(Alignment.BottomCenter)
+                            .padding(bottom = 100.dp)
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(horizontal = 20.dp, vertical = 10.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(20.dp),
+                                strokeWidth = 2.dp,
+                                color = Color.White
+                            )
+                            Text(captureStatus, color = Color.White, style = MaterialTheme.typography.bodyMedium)
+                        }
+                    }
+                }
             }
         }
     }
