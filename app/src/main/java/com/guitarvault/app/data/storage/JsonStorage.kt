@@ -12,6 +12,7 @@ import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
+import com.guitarvault.app.data.merge.CollectionMerger
 import java.io.BufferedInputStream
 import java.io.BufferedOutputStream
 import java.io.File
@@ -174,6 +175,23 @@ class JsonStorage private constructor(private val context: Context) {
         false
     }
 
+    /**
+     * Import a backup with merge semantics: matching records (UUID, or
+     * serial+status) are field-merged; unmatched records are added.
+     * See [CollectionMerger] for the full matching policy.
+     */
+    suspend fun mergeFromJson(text: String): CollectionMerger.MergeStats? = try {
+        val imported = migrate(json.decodeFromString<CollectionData>(text))
+        var result: CollectionMerger.MergeResult? = null
+        update { current ->
+            CollectionMerger.merge(current, imported).also { result = it }.data
+        }
+        result?.stats
+    } catch (e: Exception) {
+        Log.e(TAG, "Merge import failed", e)
+        null
+    }
+
     /** Result of a ZIP export: how many photos made it into the backup, by storage type. */
     data class ZipExportResult(
         val filePhotos: Int,      // camera captures etc. stored as files under photos/
@@ -243,7 +261,17 @@ class JsonStorage private constructor(private val context: Context) {
      * Import a backup from a stream: ZIP (collection.json + photos/) or a
      * plain JSON export from older versions. Replaces current data.
      */
-    suspend fun importBackupFrom(sourceStream: InputStream): Boolean = withContext(Dispatchers.IO) {
+    suspend fun importBackupFrom(sourceStream: InputStream): Boolean =
+        importBackupFrom(sourceStream, merge = false) != null
+
+    /**
+     * Import a backup from a stream, either replacing or merging.
+     * Returns the outcome (Replace or Merged with stats), or null on failure.
+     */
+    suspend fun importBackupFrom(
+        sourceStream: InputStream,
+        merge: Boolean
+    ): CollectionMerger.BackupImportResult? = withContext(Dispatchers.IO) {
         try {
             val buffered = BufferedInputStream(sourceStream)
             // Sniff the ZIP magic number ("PK") to stay compatible with old JSON-only exports
@@ -253,18 +281,26 @@ class JsonStorage private constructor(private val context: Context) {
             buffered.reset()
 
             if (headerLen == 2 && header[0] == 0x50.toByte() && header[1] == 0x4B.toByte()) {
-                importZipStream(buffered)
+                importZipStream(buffered, merge)
             } else {
-                importFromJson(buffered.bufferedReader().readText())
+                val text = buffered.bufferedReader().readText()
+                if (merge) {
+                    mergeFromJson(text)?.let { CollectionMerger.BackupImportResult.Merged(it) }
+                } else {
+                    if (importFromJson(text)) CollectionMerger.BackupImportResult.Replace else null
+                }
             }
         } catch (e: Exception) {
             Log.e(TAG, "Backup import failed", e)
-            false
+            null
         }
     }
 
     /** Unpack a backup ZIP: restore photo files, then load collection.json. */
-    private suspend fun importZipStream(stream: InputStream): Boolean {
+    private suspend fun importZipStream(
+        stream: InputStream,
+        merge: Boolean
+    ): CollectionMerger.BackupImportResult? {
         var collectionJson: String? = null
         var photosRestored = 0
 
@@ -296,9 +332,13 @@ class JsonStorage private constructor(private val context: Context) {
 
         val text = collectionJson ?: run {
             Log.e(TAG, "ZIP backup missing $COLLECTION_FILE")
-            return false
+            return null
         }
-        Log.i(TAG, "Imported ZIP: restored $photosRestored photo files")
-        return importFromJson(text)
+        Log.i(TAG, "Imported ZIP: restored $photosRestored photo files (merge=$merge)")
+        return if (merge) {
+            mergeFromJson(text)?.let { CollectionMerger.BackupImportResult.Merged(it) }
+        } else {
+            if (importFromJson(text)) CollectionMerger.BackupImportResult.Replace else null
+        }
     }
 }

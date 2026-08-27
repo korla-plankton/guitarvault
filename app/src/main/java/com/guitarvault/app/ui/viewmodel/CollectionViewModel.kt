@@ -386,6 +386,16 @@ class CollectionViewModel(
     fun importCollectionBackup(inputStream: java.io.InputStream): kotlinx.coroutines.Deferred<Boolean> =
         viewModelScope.async { storage.importBackupFrom(inputStream) }
 
+    /**
+     * Import a backup from a stream with an explicit merge/replace choice.
+     * Returns Replace or Merged(stats), or null if the backup is invalid.
+     */
+    fun importCollectionBackup(
+        inputStream: java.io.InputStream,
+        merge: Boolean
+    ): kotlinx.coroutines.Deferred<com.guitarvault.app.data.merge.CollectionMerger.BackupImportResult?> =
+        viewModelScope.async { storage.importBackupFrom(inputStream, merge) }
+
     // Wishlist
     fun addWishlistItem(item: WishlistItem) = viewModelScope.launch {
         repository.addWishlistItem(item)

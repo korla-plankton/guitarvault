@@ -2,6 +2,7 @@ package com.guitarvault.app.ui.screens
 
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.grid.GridCells
@@ -16,6 +17,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -28,6 +30,9 @@ import com.guitarvault.app.ui.components.SpecCompletenessBar
 import com.guitarvault.app.ui.viewmodel.CollectionViewModel
 import com.guitarvault.app.ui.viewmodel.SortMode
 import kotlinx.coroutines.launch
+
+/** How a backup file is applied to the current collection. */
+enum class ImportMode { MERGE, REPLACE }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -61,6 +66,7 @@ fun CollectionScreen(
     // pendingImportUri holds the chosen backup file while the dialog is up.
     var pendingImportUri by remember { mutableStateOf<android.net.Uri?>(null) }
     var isImporting by remember { mutableStateOf(false) }
+    var importMode by remember { mutableStateOf(ImportMode.MERGE) }
 
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -110,40 +116,89 @@ fun CollectionScreen(
         }
     }
 
-    // Import confirmation dialog — importing REPLACES the current collection
+    // Import confirmation dialog — Merge (safe) or Replace (destructive)
     if (pendingImportUri != null) {
         AlertDialog(
             onDismissRequest = { if (!isImporting) pendingImportUri = null },
             title = { Text("Import Collection?") },
             text = {
                 Column {
-                    Text("This will replace your current collection — ${allGuitars.size} guitar${if (allGuitars.size == 1) "" else "s"} — with the contents of the backup file.")
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Text(
-                        "This cannot be undone. Export your current collection first if you want to keep it.",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.error
-                    )
+                    Text("The backup file will be ${if (importMode == ImportMode.MERGE) "merged into" else "used to replace"} your current collection (${allGuitars.size} guitar${if (allGuitars.size == 1) "" else "s"}).")
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    // Mode selection
+                    Row(
+                        modifier = Modifier.fillMaxWidth().clickable { importMode = ImportMode.MERGE },
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        RadioButton(
+                            selected = importMode == ImportMode.MERGE,
+                            onClick = { importMode = ImportMode.MERGE }
+                        )
+                        Column {
+                            Text("Merge (recommended)", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold)
+                            Text(
+                                "Matching guitars are combined; new ones are added. Nothing is deleted.",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+                    Row(
+                        modifier = Modifier.fillMaxWidth().clickable { importMode = ImportMode.REPLACE },
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        RadioButton(
+                            selected = importMode == ImportMode.REPLACE,
+                            onClick = { importMode = ImportMode.REPLACE }
+                        )
+                        Column {
+                            Text("Replace", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold)
+                            Text(
+                                "Wipes your current collection and loads the backup instead.",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+
+                    if (importMode == ImportMode.REPLACE) {
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            "⚠️ This cannot be undone. Export your current collection first if you want to keep it.",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.error
+                        )
+                    }
                 }
             },
             confirmButton = {
                 Button(
                     onClick = {
                         val uri = pendingImportUri
+                        val merge = importMode == ImportMode.MERGE
                         isImporting = true
                         pendingImportUri = null
                         scope.launch {
-                            val ok = if (uri == null) false else try {
+                            val result = if (uri == null) null else try {
                                 val stream = context.contentResolver.openInputStream(uri)
-                                if (stream == null) false
-                                else viewModel.importCollectionBackup(stream).await()
+                                if (stream == null) null
+                                else viewModel.importCollectionBackup(stream, merge).await()
                             } catch (e: Exception) {
                                 android.util.Log.e("CollectionScreen", "Import failed", e)
-                                false
+                                null
                             }
                             isImporting = false
-                            exportStatus = if (ok) "✅ Collection imported successfully"
-                                           else "❌ Import failed — invalid backup file"
+                            exportStatus = when (result) {
+                                null -> "❌ Import failed — invalid backup file"
+                                is com.guitarvault.app.data.merge.CollectionMerger.BackupImportResult.Replace ->
+                                    "✅ Collection imported successfully"
+                                is com.guitarvault.app.data.merge.CollectionMerger.BackupImportResult.Merged -> {
+                                    val s = result.stats
+                                    "✅ Merged: ${s.guitarsAdded} guitar${if (s.guitarsAdded == 1) "" else "s"} added, " +
+                                        "${s.guitarsUpdated} updated, ${s.guitarsUnchanged} unchanged"
+                                }
+                            }
                         }
                     },
                     enabled = !isImporting
