@@ -239,20 +239,6 @@ fun CollectionScreen(
                     )
                 },
                 actions = {
-                    // Theme cycle: System -> Light -> Dark. Shows the icon of the
-                    // mode you'd get by tapping (sun = go light, moon = go dark).
-                    val themeMode by ThemePrefs.mode.collectAsState()
-                    IconButton(onClick = { ThemePrefs.nextMode() }) {
-                        val (icon, desc) = when (themeMode) {
-                            // currently System -> next is Light
-                            ThemeMode.SYSTEM -> Icons.Default.LightMode to "Switch to Light mode"
-                            // currently Light -> next is Dark
-                            ThemeMode.LIGHT -> Icons.Default.DarkMode to "Switch to Dark mode"
-                            // currently Dark -> next is System
-                            ThemeMode.DARK -> Icons.Default.BrightnessAuto to "Switch to System theme"
-                        }
-                        Icon(icon, contentDescription = desc)
-                    }
                     IconButton(onClick = { showFilterMenu = true }) {
                         Icon(Icons.Default.FilterList, contentDescription = "Filter")
                     }
@@ -281,7 +267,7 @@ fun CollectionScreen(
                             )
                         }
                     }
-                    // Overflow menu: challenge, legal, export/import
+                    // Overflow menu: challenge, legal, theme, export/import
                     DropdownMenu(expanded = showExportMenu, onDismissRequest = { showExportMenu = false }) {
                         DropdownMenuItem(
                             text = { Text("🎲 Random Spec Challenge") },
@@ -297,6 +283,29 @@ fun CollectionScreen(
                                 onLegal()
                             }
                         )
+                        HorizontalDivider()
+                        // Theme: shows all three modes with the current one ticked
+                        val themeMode by ThemePrefs.mode.collectAsState()
+                        ThemeMode.entries.forEach { mode ->
+                            DropdownMenuItem(
+                                leadingIcon = {
+                                    val icon = when (mode) {
+                                        ThemeMode.SYSTEM -> Icons.Default.BrightnessAuto
+                                        ThemeMode.LIGHT -> Icons.Default.LightMode
+                                        ThemeMode.DARK -> Icons.Default.DarkMode
+                                    }
+                                    Icon(icon, contentDescription = null)
+                                },
+                                text = { Text(mode.displayName) },
+                                trailingIcon = {
+                                    if (themeMode == mode) Icon(Icons.Default.Check, contentDescription = "Current")
+                                },
+                                onClick = {
+                                    ThemePrefs.setMode(mode)
+                                    showExportMenu = false
+                                }
+                            )
+                        }
                         HorizontalDivider()
                         DropdownMenuItem(
                             text = { Text("📤 Export Collection (ZIP)") },
