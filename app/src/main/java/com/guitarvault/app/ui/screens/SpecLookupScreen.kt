@@ -42,7 +42,7 @@ fun SpecLookupScreen(
         }.trim()
     }
 
-    val googleUrl = "https://www.google.com/search?q=${Uri.encode("$query guitar specs")}"
+    val googleUrl = "https://www.google.com/search?tbm=isch&q=${Uri.encode("$query guitar specs")}"
     val reverbUrl = "https://reverb.com/marketplace?query=${Uri.encode(query)}"
     val ebayUrl = "https://www.ebay.com/sch/i.html?_nkw=${Uri.encode("$query guitar")}"
 
@@ -109,8 +109,8 @@ fun SpecLookupScreen(
 
             // Google Search
             SearchButton(
-                label = "Search Google",
-                subtitle = "Find spec sheets, reviews, and manufacturer pages",
+                label = "Search for Images",
+                subtitle = "Google Images: identify details, finishes, and hardware visually",
                 onClick = { openUrl(googleUrl) },
                 modifier = Modifier.fillMaxWidth()
             )
