@@ -303,6 +303,14 @@ class CollectionViewModel(
         repository.addMaintenanceEntry(guitarId, entry)
     }
 
+    fun updateMaintenanceEntry(guitarId: String, entry: MaintenanceEntry) = viewModelScope.launch {
+        repository.updateMaintenanceEntry(guitarId, entry)
+    }
+
+    fun deleteMaintenanceEntry(guitarId: String, entryId: String) = viewModelScope.launch {
+        repository.deleteMaintenanceEntry(guitarId, entryId)
+    }
+
     fun addCustomField(guitarId: String, field: CustomField) = viewModelScope.launch {
         repository.addCustomField(guitarId, field)
     }

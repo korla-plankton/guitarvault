@@ -147,7 +147,9 @@ fun GuitarDetailScreen(
                 DetailTab.CONDITION -> ConditionTab(
                     guitar = guitar,
                     onAddCondition = { record -> viewModel.addConditionRecord(guitarId, record) },
-                    onAddMaintenance = { entry -> viewModel.addMaintenanceEntry(guitarId, entry) }
+                    onAddMaintenance = { entry -> viewModel.addMaintenanceEntry(guitarId, entry) },
+                    onUpdateMaintenance = { entry -> viewModel.updateMaintenanceEntry(guitarId, entry) },
+                    onDeleteMaintenance = { entryId -> viewModel.deleteMaintenanceEntry(guitarId, entryId) }
                 )
             }
         }

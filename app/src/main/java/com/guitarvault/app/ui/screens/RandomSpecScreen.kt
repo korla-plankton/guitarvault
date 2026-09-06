@@ -166,8 +166,12 @@ fun RandomSpecScreen(
                     else -> guitar.status
                 }
 
-                // Primary photo (or 🎸 fallback when the guitar has no photos)
-                val photoModel = viewModel.getPhotoModel(guitar.primaryPhoto)
+                // Primary photo (or 🎸 fallback when the guitar has no photos).
+                // remember() on the guitar id: getPhotoModel decodes base64 into a
+                // fresh ByteArray on every recomposition, and Coil treats each new
+                // array as a different image — without this the photo flickers on
+                // every keystroke in the answer field.
+                val photoModel = remember(guitar.id) { viewModel.getPhotoModel(guitar.primaryPhoto) }
                 if (photoModel != null) {
                     AsyncImage(
                         model = photoModel,

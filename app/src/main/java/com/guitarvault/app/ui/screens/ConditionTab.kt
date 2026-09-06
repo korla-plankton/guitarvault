@@ -5,6 +5,8 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
@@ -17,19 +19,25 @@ import com.guitarvault.app.data.model.MaintenanceType
 import com.guitarvault.app.ui.components.ConditionBadge
 import com.guitarvault.app.ui.components.SpecSection
 import com.guitarvault.app.ui.components.formatCurrency
+import com.guitarvault.app.util.utcMidnightToLocal
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ConditionTab(
     guitar: Guitar,
     onAddCondition: (ConditionRecord) -> Unit,
     onAddMaintenance: (MaintenanceEntry) -> Unit,
+    onUpdateMaintenance: (MaintenanceEntry) -> Unit = {},
+    onDeleteMaintenance: (String) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     var showConditionDialog by remember { mutableStateOf(false) }
     var showMaintenanceDialog by remember { mutableStateOf(false) }
+    var editingEntry by remember { mutableStateOf<MaintenanceEntry?>(null) }
+    var deletingEntry by remember { mutableStateOf<MaintenanceEntry?>(null) }
     val df = SimpleDateFormat("MMM d, yyyy", Locale.getDefault())
 
     Column(
@@ -104,22 +112,36 @@ fun ConditionTab(
             } else {
                 guitar.maintenanceLog.sortedByDescending { it.date }.forEach { entry ->
                     HorizontalDivider()
-                    Column(modifier = Modifier.padding(vertical = 4.dp)) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween
-                        ) {
-                            Text(entry.type.displayName, style = MaterialTheme.typography.bodyMedium)
-                            Text(df.format(Date(entry.date)),
-                                style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Row(
+                        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                Text(entry.type.displayName, style = MaterialTheme.typography.bodyMedium)
+                                Text(df.format(Date(entry.date)),
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            }
+                            Text(entry.description, style = MaterialTheme.typography.bodyMedium)
+                            entry.cost?.let { Text(formatCurrency(it), style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant) }
+                            if (entry.technician.isNotBlank()) {
+                                Text("Tech: ${entry.technician}", style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            }
                         }
-                        Text(entry.description, style = MaterialTheme.typography.bodyMedium)
-                        entry.cost?.let { Text(formatCurrency(it), style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant) }
-                        if (entry.technician.isNotBlank()) {
-                            Text("Tech: ${entry.technician}", style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        IconButton(onClick = { editingEntry = entry }) {
+                            Icon(Icons.Default.Edit, contentDescription = "Edit entry",
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
+                        IconButton(onClick = { deletingEntry = entry }) {
+                            Icon(Icons.Default.Delete, contentDescription = "Delete entry",
+                                tint = MaterialTheme.colorScheme.error)
                         }
                     }
                 }
@@ -147,13 +169,43 @@ fun ConditionTab(
     }
     if (showMaintenanceDialog) {
         AddMaintenanceDialog(
-            onConfirm = { type, desc, cost, tech ->
+            onConfirm = { type, desc, cost, tech, date ->
                 onAddMaintenance(MaintenanceEntry(
-                    type = type, description = desc, cost = cost, technician = tech
+                    type = type, description = desc, cost = cost, technician = tech, date = date
                 ))
                 showMaintenanceDialog = false
             },
             onDismiss = { showMaintenanceDialog = false }
+        )
+    }
+
+    // Edit an existing maintenance entry
+    editingEntry?.let { entry ->
+        AddMaintenanceDialog(
+            existing = entry,
+            onConfirm = { type, desc, cost, tech, date ->
+                onUpdateMaintenance(entry.copy(
+                    type = type, description = desc, cost = cost, technician = tech, date = date
+                ))
+                editingEntry = null
+            },
+            onDismiss = { editingEntry = null }
+        )
+    }
+
+    // Delete confirmation
+    deletingEntry?.let { entry ->
+        AlertDialog(
+            onDismissRequest = { deletingEntry = null },
+            title = { Text("Delete Maintenance Entry") },
+            text = { Text("Delete \"${entry.type.displayName} — ${entry.description}\"? This cannot be undone.") },
+            confirmButton = {
+                TextButton(onClick = {
+                    onDeleteMaintenance(entry.id)
+                    deletingEntry = null
+                }) { Text("Delete", color = MaterialTheme.colorScheme.error) }
+            },
+            dismissButton = { TextButton(onClick = { deletingEntry = null }) { Text("Cancel") } }
         )
     }
 }
@@ -197,20 +249,25 @@ private fun AddConditionDialog(
     )
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun AddMaintenanceDialog(
-    onConfirm: (MaintenanceType, String, Double?, String) -> Unit,
-    onDismiss: () -> Unit
+    onConfirm: (MaintenanceType, String, Double?, String, Long) -> Unit,
+    onDismiss: () -> Unit,
+    existing: MaintenanceEntry? = null
 ) {
-    var type by remember { mutableStateOf(MaintenanceType.SETUP) }
-    var desc by remember { mutableStateOf("") }
-    var costStr by remember { mutableStateOf("") }
-    var tech by remember { mutableStateOf("") }
+    var type by remember { mutableStateOf(existing?.type ?: MaintenanceType.SETUP) }
+    var desc by remember { mutableStateOf(existing?.description ?: "") }
+    var costStr by remember { mutableStateOf(existing?.cost?.toString() ?: "") }
+    var tech by remember { mutableStateOf(existing?.technician ?: "") }
+    var date by remember { mutableStateOf(existing?.date ?: System.currentTimeMillis()) }
     var expanded by remember { mutableStateOf(false) }
+    var showDatePicker by remember { mutableStateOf(false) }
+    val df = SimpleDateFormat("MMM d, yyyy", Locale.getDefault())
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Log Maintenance") },
+        title = { Text(if (existing == null) "Log Maintenance" else "Edit Maintenance Entry") },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Box {
@@ -224,6 +281,14 @@ private fun AddMaintenanceDialog(
                         }
                     }
                 }
+                // Date of the work performed — defaults to today but is user-set,
+                // so historical maintenance can be logged accurately.
+                OutlinedButton(
+                    onClick = { showDatePicker = true },
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text("Date performed: ${df.format(Date(date))}")
+                }
                 OutlinedTextField(value = desc, onValueChange = { desc = it },
                     label = { Text("Description") }, modifier = Modifier.fillMaxWidth())
                 OutlinedTextField(value = costStr, onValueChange = { costStr = it },
@@ -234,9 +299,25 @@ private fun AddMaintenanceDialog(
         },
         confirmButton = {
             TextButton(onClick = {
-                onConfirm(type, desc, costStr.toDoubleOrNull(), tech)
+                onConfirm(type, desc, costStr.toDoubleOrNull(), tech, date)
             }, enabled = desc.isNotBlank()) { Text("Save") }
         },
         dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } }
     )
+
+    if (showDatePicker) {
+        val datePickerState = rememberDatePickerState(initialSelectedDateMillis = date)
+        DatePickerDialog(
+            onDismissRequest = { showDatePicker = false },
+            confirmButton = {
+                TextButton(onClick = {
+                    datePickerState.selectedDateMillis?.let { date = utcMidnightToLocal(it) }
+                    showDatePicker = false
+                }) { Text("OK") }
+            },
+            dismissButton = { TextButton(onClick = { showDatePicker = false }) { Text("Cancel") } }
+        ) {
+            DatePicker(state = datePickerState)
+        }
+    }
 }

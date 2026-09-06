@@ -136,6 +136,38 @@ class GuitarRepository(private val storage: JsonStorage) {
         }
     }
 
+    /** Replace an existing maintenance log entry (matched by id). */
+    suspend fun updateMaintenanceEntry(guitarId: String, entry: MaintenanceEntry) {
+        storage.update { col ->
+            col.copy(
+                guitars = col.guitars.map { g ->
+                    if (g.id == guitarId) {
+                        g.copy(
+                            maintenanceLog = g.maintenanceLog.map { if (it.id == entry.id) entry else it },
+                            updatedAt = System.currentTimeMillis()
+                        )
+                    } else g
+                }
+            )
+        }
+    }
+
+    /** Delete a maintenance log entry by id. */
+    suspend fun deleteMaintenanceEntry(guitarId: String, entryId: String) {
+        storage.update { col ->
+            col.copy(
+                guitars = col.guitars.map { g ->
+                    if (g.id == guitarId) {
+                        g.copy(
+                            maintenanceLog = g.maintenanceLog.filter { it.id != entryId },
+                            updatedAt = System.currentTimeMillis()
+                        )
+                    } else g
+                }
+            )
+        }
+    }
+
     // ── Valuation ─────────────────────────────────────────────────
 
     suspend fun updateValuation(guitarId: String, valuation: Valuation) {

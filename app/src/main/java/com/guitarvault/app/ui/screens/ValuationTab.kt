@@ -18,11 +18,10 @@ import com.guitarvault.app.data.model.Valuation
 import com.guitarvault.app.ui.components.SpecSection
 import com.guitarvault.app.ui.components.SpecRow
 import com.guitarvault.app.ui.components.formatCurrency
+import com.guitarvault.app.util.utcMidnightToLocal
 import java.text.SimpleDateFormat
-import java.util.Calendar
 import java.util.Date
 import java.util.Locale
-import java.util.TimeZone
 
 @Composable
 fun ValuationTab(
@@ -271,18 +270,6 @@ private fun PurchaseInfoDialog(
             DatePicker(state = datePickerState)
         }
     }
-}
-
-/**
- * DatePicker reports selection as UTC midnight millis; in negative-offset
- * timezones that formats as the previous day. Re-anchor to local midnight.
- */
-private fun utcMidnightToLocal(utcMillis: Long): Long {
-    val utc = Calendar.getInstance(TimeZone.getTimeZone("UTC")).apply { timeInMillis = utcMillis }
-    val local = Calendar.getInstance().apply {
-        set(utc.get(Calendar.YEAR), utc.get(Calendar.MONTH), utc.get(Calendar.DAY_OF_MONTH), 12, 0, 0)
-    }
-    return local.timeInMillis
 }
 
 @Composable
