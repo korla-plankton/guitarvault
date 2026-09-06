@@ -8,5 +8,7 @@ class GuitarVaultApp : Application() {
         super.onCreate()
         // Initialize JSON storage — loads collection from disk
         JsonStorage.getInstance(this)
+        // Load saved theme preference (System/Light/Dark)
+        com.guitarvault.app.ui.theme.ThemePrefs.init(this)
     }
 }

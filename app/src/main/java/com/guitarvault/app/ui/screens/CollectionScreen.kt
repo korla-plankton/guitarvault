@@ -29,6 +29,8 @@ import com.guitarvault.app.ui.components.SortDropdown
 import com.guitarvault.app.ui.components.SpecCompletenessBar
 import com.guitarvault.app.ui.viewmodel.CollectionViewModel
 import com.guitarvault.app.ui.viewmodel.SortMode
+import com.guitarvault.app.ui.theme.ThemeMode
+import com.guitarvault.app.ui.theme.ThemePrefs
 import kotlinx.coroutines.launch
 
 /** How a backup file is applied to the current collection. */
@@ -237,6 +239,20 @@ fun CollectionScreen(
                     )
                 },
                 actions = {
+                    // Theme cycle: System -> Light -> Dark. Shows the icon of the
+                    // mode you'd get by tapping (sun = go light, moon = go dark).
+                    val themeMode by ThemePrefs.mode.collectAsState()
+                    IconButton(onClick = { ThemePrefs.nextMode() }) {
+                        val (icon, desc) = when (themeMode) {
+                            // currently System -> next is Light
+                            ThemeMode.SYSTEM -> Icons.Default.LightMode to "Switch to Light mode"
+                            // currently Light -> next is Dark
+                            ThemeMode.LIGHT -> Icons.Default.DarkMode to "Switch to Dark mode"
+                            // currently Dark -> next is System
+                            ThemeMode.DARK -> Icons.Default.BrightnessAuto to "Switch to System theme"
+                        }
+                        Icon(icon, contentDescription = desc)
+                    }
                     IconButton(onClick = { showFilterMenu = true }) {
                         Icon(Icons.Default.FilterList, contentDescription = "Filter")
                     }
