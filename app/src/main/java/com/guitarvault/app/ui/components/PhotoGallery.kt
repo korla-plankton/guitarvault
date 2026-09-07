@@ -10,6 +10,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.AutoFixHigh
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.PhotoLibrary
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.Undo
@@ -44,9 +45,12 @@ fun PhotoGallery(
     onPhotoClick: (GuitarPhoto) -> Unit,
     onRemoveBackground: (GuitarPhoto) -> Unit = {},
     onUndoBackgroundRemoval: (GuitarPhoto) -> Unit = {},
+    onUpdatePhoto: (GuitarPhoto) -> Unit = {},
     bgRemovalProgress: Map<String, String> = emptyMap(),
     modifier: Modifier = Modifier
 ) {
+    var editingPhoto by remember { mutableStateOf<GuitarPhoto?>(null) }
+
     LazyRow(
         modifier = modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -61,7 +65,8 @@ fun PhotoGallery(
                 onSetPrimary = { onSetPrimary(photo) },
                 onClick = { onPhotoClick(photo) },
                 onRemoveBackground = { onRemoveBackground(photo) },
-                onUndoBackgroundRemoval = { onUndoBackgroundRemoval(photo) }
+                onUndoBackgroundRemoval = { onUndoBackgroundRemoval(photo) },
+                onEditDetails = { editingPhoto = photo }
             )
         }
         item {
@@ -74,6 +79,55 @@ fun PhotoGallery(
             GalleryPickerButton(onClick = onPickFromGallery)
         }
     }
+
+    // Caption + tags editor
+    editingPhoto?.let { photo ->
+        PhotoDetailsDialog(
+            photo = photo,
+            onConfirm = { caption, tags ->
+                onUpdatePhoto(photo.copy(caption = caption, tags = tags))
+                editingPhoto = null
+            },
+            onDismiss = { editingPhoto = null }
+        )
+    }
+}
+
+@Composable
+private fun PhotoDetailsDialog(
+    photo: GuitarPhoto,
+    onConfirm: (String, List<String>) -> Unit,
+    onDismiss: () -> Unit
+) {
+    var caption by remember { mutableStateOf(photo.caption) }
+    var tagsStr by remember { mutableStateOf(photo.tags.joinToString(", ")) }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Photo Details") },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                OutlinedTextField(
+                    value = caption, onValueChange = { caption = it },
+                    label = { Text("Caption") }, singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
+                )
+                OutlinedTextField(
+                    value = tagsStr, onValueChange = { tagsStr = it },
+                    label = { Text("Tags (comma-separated)") },
+                    supportingText = { Text("e.g. scratch, before refinish, headstock") },
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = {
+                val tags = tagsStr.split(",").map { it.trim() }.filter { it.isNotBlank() }
+                onConfirm(caption.trim(), tags)
+            }) { Text("Save") }
+        },
+        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } }
+    )
 }
 
 @Composable
@@ -85,7 +139,8 @@ private fun PhotoThumbnail(
     onSetPrimary: () -> Unit,
     onClick: () -> Unit,
     onRemoveBackground: () -> Unit = {},
-    onUndoBackgroundRemoval: () -> Unit = {}
+    onUndoBackgroundRemoval: () -> Unit = {},
+    onEditDetails: () -> Unit = {}
 ) {
     Box(
         modifier = Modifier
@@ -211,6 +266,23 @@ private fun PhotoThumbnail(
                     modifier = Modifier.clickable(onClick = onSetPrimary)
                 )
             }
+        }
+
+        // Bottom-right: edit caption/tags button
+        IconButton(
+            onClick = onEditDetails,
+            modifier = Modifier
+                .align(Alignment.BottomEnd)
+                .padding(bottom = 26.dp)
+                .size(24.dp)
+                .background(Color.Black.copy(alpha = 0.5f), RoundedCornerShape(4.dp))
+        ) {
+            Icon(
+                Icons.Default.Edit,
+                contentDescription = "Edit photo details",
+                tint = Color.White,
+                modifier = Modifier.size(16.dp)
+            )
         }
 
         // BG removed badge

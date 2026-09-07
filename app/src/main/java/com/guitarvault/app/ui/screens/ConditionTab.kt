@@ -9,6 +9,7 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.guitarvault.app.data.model.ConditionRating
@@ -32,12 +33,16 @@ fun ConditionTab(
     onAddMaintenance: (MaintenanceEntry) -> Unit,
     onUpdateMaintenance: (MaintenanceEntry) -> Unit = {},
     onDeleteMaintenance: (String) -> Unit = {},
+    onUpdateCondition: (ConditionRecord) -> Unit = {},
+    onDeleteCondition: (String) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     var showConditionDialog by remember { mutableStateOf(false) }
     var showMaintenanceDialog by remember { mutableStateOf(false) }
     var editingEntry by remember { mutableStateOf<MaintenanceEntry?>(null) }
     var deletingEntry by remember { mutableStateOf<MaintenanceEntry?>(null) }
+    var editingCondition by remember { mutableStateOf<ConditionRecord?>(null) }
+    var deletingCondition by remember { mutableStateOf<ConditionRecord?>(null) }
     val df = SimpleDateFormat("MMM d, yyyy", Locale.getDefault())
 
     Column(
@@ -51,7 +56,8 @@ fun ConditionTab(
             guitar.currentCondition?.let { record ->
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
                     Column {
                         ConditionBadge(rating = record.rating)
@@ -59,6 +65,16 @@ fun ConditionTab(
                         Text(df.format(Date(record.recordedAt)),
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                    Row {
+                        IconButton(onClick = { editingCondition = record }) {
+                            Icon(Icons.Default.Edit, contentDescription = "Edit condition record",
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
+                        IconButton(onClick = { deletingCondition = record }) {
+                            Icon(Icons.Default.Delete, contentDescription = "Delete condition record",
+                                tint = MaterialTheme.colorScheme.error)
+                        }
                     }
                 }
                 if (record.notes.isNotBlank()) {
@@ -208,21 +224,53 @@ fun ConditionTab(
             dismissButton = { TextButton(onClick = { deletingEntry = null }) { Text("Cancel") } }
         )
     }
+
+    // Edit an existing condition record
+    editingCondition?.let { record ->
+        AddConditionDialog(
+            existing = record,
+            onConfirm = { rating, notes, issues ->
+                onUpdateCondition(record.copy(
+                    rating = rating, notes = notes,
+                    issues = issues.split("\n").filter { it.isNotBlank() }
+                ))
+                editingCondition = null
+            },
+            onDismiss = { editingCondition = null }
+        )
+    }
+
+    // Delete confirmation for condition record
+    deletingCondition?.let { record ->
+        AlertDialog(
+            onDismissRequest = { deletingCondition = null },
+            title = { Text("Delete Condition Record") },
+            text = { Text("Delete the ${record.rating.displayName} record from ${df.format(Date(record.recordedAt))}? This cannot be undone.") },
+            confirmButton = {
+                TextButton(onClick = {
+                    onDeleteCondition(record.id)
+                    deletingCondition = null
+                }) { Text("Delete", color = MaterialTheme.colorScheme.error) }
+            },
+            dismissButton = { TextButton(onClick = { deletingCondition = null }) { Text("Cancel") } }
+        )
+    }
 }
 
 @Composable
 private fun AddConditionDialog(
     onConfirm: (ConditionRating, String, String) -> Unit,
-    onDismiss: () -> Unit
+    onDismiss: () -> Unit,
+    existing: ConditionRecord? = null
 ) {
-    var rating by remember { mutableStateOf(ConditionRating.EXCELLENT) }
-    var notes by remember { mutableStateOf("") }
-    var issues by remember { mutableStateOf("") }
+    var rating by remember { mutableStateOf(existing?.rating ?: ConditionRating.EXCELLENT) }
+    var notes by remember { mutableStateOf(existing?.notes ?: "") }
+    var issues by remember { mutableStateOf(existing?.issues?.joinToString("\n") ?: "") }
     var expanded by remember { mutableStateOf(false) }
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Record Condition") },
+        title = { Text(if (existing == null) "Record Condition" else "Edit Condition Record") },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Box {

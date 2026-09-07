@@ -122,6 +122,38 @@ class GuitarRepository(private val storage: JsonStorage) {
         }
     }
 
+    /** Replace an existing condition record (matched by id). */
+    suspend fun updateConditionRecord(guitarId: String, record: ConditionRecord) {
+        storage.update { col ->
+            col.copy(
+                guitars = col.guitars.map { g ->
+                    if (g.id == guitarId) {
+                        g.copy(
+                            conditionHistory = g.conditionHistory.map { if (it.id == record.id) record else it },
+                            updatedAt = System.currentTimeMillis()
+                        )
+                    } else g
+                }
+            )
+        }
+    }
+
+    /** Delete a condition record by id. */
+    suspend fun deleteConditionRecord(guitarId: String, recordId: String) {
+        storage.update { col ->
+            col.copy(
+                guitars = col.guitars.map { g ->
+                    if (g.id == guitarId) {
+                        g.copy(
+                            conditionHistory = g.conditionHistory.filter { it.id != recordId },
+                            updatedAt = System.currentTimeMillis()
+                        )
+                    } else g
+                }
+            )
+        }
+    }
+
     // ── Maintenance ───────────────────────────────────────────────
 
     suspend fun addMaintenanceEntry(guitarId: String, entry: MaintenanceEntry) {

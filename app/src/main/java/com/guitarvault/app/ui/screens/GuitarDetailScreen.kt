@@ -149,7 +149,9 @@ fun GuitarDetailScreen(
                     onAddCondition = { record -> viewModel.addConditionRecord(guitarId, record) },
                     onAddMaintenance = { entry -> viewModel.addMaintenanceEntry(guitarId, entry) },
                     onUpdateMaintenance = { entry -> viewModel.updateMaintenanceEntry(guitarId, entry) },
-                    onDeleteMaintenance = { entryId -> viewModel.deleteMaintenanceEntry(guitarId, entryId) }
+                    onDeleteMaintenance = { entryId -> viewModel.deleteMaintenanceEntry(guitarId, entryId) },
+                    onUpdateCondition = { record -> viewModel.updateConditionRecord(guitarId, record) },
+                    onDeleteCondition = { recordId -> viewModel.deleteConditionRecord(guitarId, recordId) }
                 )
             }
         }
@@ -314,6 +316,10 @@ private fun PhotosTab(
             onUndoBackgroundRemoval = { photo ->
                 viewModel.undoBackgroundRemoval(guitar.id, photo.id)
                 pasteStatus = "↩️ Background removal undone"
+            },
+            onUpdatePhoto = { photo ->
+                viewModel.updatePhoto(guitar.id, photo)
+                pasteStatus = "✅ Photo details saved"
             },
             bgRemovalProgress = bgProgress,
             onPhotoClick = { photo ->

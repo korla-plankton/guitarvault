@@ -295,8 +295,21 @@ class CollectionViewModel(
         repository.updatePhoto(guitarId, photo.copy(isPrimary = true))
     }
 
+    /** Update a photo's metadata (caption, tags, type...). */
+    fun updatePhoto(guitarId: String, photo: GuitarPhoto) = viewModelScope.launch {
+        repository.updatePhoto(guitarId, photo)
+    }
+
     fun addConditionRecord(guitarId: String, record: ConditionRecord) = viewModelScope.launch {
         repository.addConditionRecord(guitarId, record)
+    }
+
+    fun updateConditionRecord(guitarId: String, record: ConditionRecord) = viewModelScope.launch {
+        repository.updateConditionRecord(guitarId, record)
+    }
+
+    fun deleteConditionRecord(guitarId: String, recordId: String) = viewModelScope.launch {
+        repository.deleteConditionRecord(guitarId, recordId)
     }
 
     fun addMaintenanceEntry(guitarId: String, entry: MaintenanceEntry) = viewModelScope.launch {

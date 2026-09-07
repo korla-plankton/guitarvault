@@ -161,6 +161,13 @@ fun FullScreenPhotoViewer(
                             color = Color.White.copy(alpha = 0.7f)
                         )
                     }
+                    if (currentPhoto.tags.isNotEmpty()) {
+                        Text(
+                            text = currentPhoto.tags.joinToString(" · ") { "#$it" },
+                            style = MaterialTheme.typography.bodySmall,
+                            color = Color.White.copy(alpha = 0.7f)
+                        )
+                    }
                 }
             }
         }

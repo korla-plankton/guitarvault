@@ -15,6 +15,7 @@ data class GuitarPhoto(
     val originalFilePath: String? = null,  // original file path before background removal; null if none
     val backgroundRemoved: Boolean = false,
     val caption: String = "",
+    val tags: List<String> = emptyList(), // user tags, e.g. "scratch", "before refinish"
     val isPrimary: Boolean = false,
     val photoType: PhotoType = PhotoType.GENERAL,
     val capturedAt: Long = System.currentTimeMillis()
