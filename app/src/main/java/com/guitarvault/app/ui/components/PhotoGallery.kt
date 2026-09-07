@@ -82,8 +82,12 @@ fun PhotoGallery(
 
     // Caption + tags editor
     editingPhoto?.let { photo ->
+        // Suggestions: built-in defaults + tags already used on this guitar's
+        // photos (keeps spelling consistent, e.g. always "headstock" not "head stock")
+        val usedTags = photos.flatMap { it.tags }.distinct()
         PhotoDetailsDialog(
             photo = photo,
+            suggestedTags = (DEFAULT_PHOTO_TAGS + usedTags).distinct(),
             onConfirm = { caption, tags ->
                 onUpdatePhoto(photo.copy(caption = caption, tags = tags))
                 editingPhoto = null
@@ -93,14 +97,22 @@ fun PhotoGallery(
     }
 }
 
+/** Built-in tag suggestions for photo details. */
+private val DEFAULT_PHOTO_TAGS = listOf(
+    "front", "back", "side", "headstock", "neck", "body",
+    "pickups", "electronics", "hardware", "case", "damage", "repair"
+)
+
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun PhotoDetailsDialog(
     photo: GuitarPhoto,
+    suggestedTags: List<String>,
     onConfirm: (String, List<String>) -> Unit,
     onDismiss: () -> Unit
 ) {
     var caption by remember { mutableStateOf(photo.caption) }
-    var tagsStr by remember { mutableStateOf(photo.tags.joinToString(", ")) }
+    var tags by remember { mutableStateOf(photo.tags.toMutableList()) }
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -112,17 +124,42 @@ private fun PhotoDetailsDialog(
                     label = { Text("Caption") }, singleLine = true,
                     modifier = Modifier.fillMaxWidth()
                 )
-                OutlinedTextField(
-                    value = tagsStr, onValueChange = { tagsStr = it },
-                    label = { Text("Tags (comma-separated)") },
-                    supportingText = { Text("e.g. scratch, before refinish, headstock") },
-                    modifier = Modifier.fillMaxWidth()
-                )
+
+                // Selected tags as removable chips
+                Text("Tags", style = MaterialTheme.typography.labelMedium)
+                if (tags.isNotEmpty()) {
+                    FlowRow(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                        tags.forEach { tag ->
+                            InputChip(
+                                selected = true,
+                                onClick = { tags = tags.filter { it != tag }.toMutableList() },
+                                label = { Text(tag) },
+                                trailingIcon = {
+                                    Icon(Icons.Default.Close, contentDescription = "Remove tag",
+                                        modifier = Modifier.size(16.dp))
+                                }
+                            )
+                        }
+                    }
+                }
+
+                // Suggestions: tap to add
+                val remaining = suggestedTags.filter { it !in tags }
+                if (remaining.isNotEmpty()) {
+                    FlowRow(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                        remaining.forEach { tag ->
+                            SuggestionChip(
+                                onClick = { tags = (tags + tag).toMutableList() },
+                                label = { Text(tag) },
+                                border = null
+                            )
+                        }
+                    }
+                }
             }
         },
         confirmButton = {
             TextButton(onClick = {
-                val tags = tagsStr.split(",").map { it.trim() }.filter { it.isNotBlank() }
                 onConfirm(caption.trim(), tags)
             }) { Text("Save") }
         },
