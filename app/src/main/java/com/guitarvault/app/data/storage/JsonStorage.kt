@@ -90,23 +90,48 @@ class JsonStorage private constructor(private val context: Context) {
     }
 
     /**
-     * Migrate legacy collection data to the current schema.
+     * Migrate legacy collection data to the current schema, step by step.
      * v1 -> v2: scale length was stored in mm; now decimal inches.
-     * Values > 100 are unambiguously mm (shortest real scales are ~20" / 508mm).
+     *   Values > 100 are unambiguously mm (shortest real scales are ~20" / 508mm).
+     * v2 -> v3: Semi-Hollow/Hollow Body were GuitarTypes (construction mixed
+     *   into the family list); now Electric + bodyConstruction string.
      */
     private fun migrate(data: CollectionData): CollectionData {
-        if (data.version >= 2) return data
-        val migrated = data.copy(
-            version = 2,
-            guitars = data.guitars.map { g ->
-                val len = g.scaleLength
-                if (len != null && len > 100) {
-                    g.copy(scaleLength = Math.round(len / 25.4 * 100) / 100.0)
-                } else g
-            }
-        )
-        Log.i(TAG, "Migrated collection data v${data.version} -> v2 (scale length mm -> inches)")
-        return migrated
+        var result = data
+
+        if (result.version < 2) {
+            result = result.copy(
+                version = 2,
+                guitars = result.guitars.map { g ->
+                    val len = g.scaleLength
+                    if (len != null && len > 100) {
+                        g.copy(scaleLength = Math.round(len / 25.4 * 100) / 100.0)
+                    } else g
+                }
+            )
+            Log.i(TAG, "Migrated collection data to v2 (scale length mm -> inches)")
+        }
+
+        if (result.version < 3) {
+            result = result.copy(
+                version = 3,
+                guitars = result.guitars.map { g ->
+                    val construction = com.guitarvault.app.data.model.BodyConstruction.fromLegacyGuitarType(g.guitarType)
+                    if (construction != null) {
+                        // Only override construction if the guitar doesn't already have one
+                        val bc = g.bodyConstruction.ifBlank { construction.displayName }
+                        g.copy(guitarType = com.guitarvault.app.data.model.GuitarType.ELECTRIC, bodyConstruction = bc)
+                    } else g
+                },
+                wishlist = result.wishlist.map { w ->
+                    val construction = com.guitarvault.app.data.model.BodyConstruction.fromLegacyGuitarType(w.guitarType)
+                    if (construction != null) w.copy(guitarType = com.guitarvault.app.data.model.GuitarType.ELECTRIC) else w
+                }
+            )
+            Log.i(TAG, "Migrated collection data to v3 (Semi-Hollow/Hollow Body -> Electric + construction)")
+        }
+
+        return result
     }
 
     private fun saveToDisk(data: CollectionData) {

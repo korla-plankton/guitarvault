@@ -226,7 +226,7 @@ private fun AddWishlistDialog(
                 Box {
                     OutlinedButton(onClick = { typeExpanded = true }) { Text("Type: ${guitarType.displayName}") }
                     DropdownMenu(expanded = typeExpanded, onDismissRequest = { typeExpanded = false }) {
-                        GuitarType.entries.forEach { type ->
+                        GuitarType.selectableEntries.forEach { type ->
                             DropdownMenuItem(text = { Text(type.displayName) },
                                 onClick = { guitarType = type; typeExpanded = false })
                         }

@@ -313,7 +313,13 @@ enum class GuitarType(val displayName: String) {
     ACOUSTIC("Acoustic"),
     CLASSICAL("Classical"),
     BASS("Bass"),
+    /**
+     * Legacy: construction, not instrument family. Kept so old backups
+     * deserialize; hidden from pickers (see [selectableEntries]) and
+     * migrated to ELECTRIC + bodyConstruction in storage v3.
+     */
     SEMI_HOLLOW("Semi-Hollow"),
+    /** Legacy: see [SEMI_HOLLOW]. */
     HOLLOW_BODY("Hollow Body"),
     RESONATOR("Resonator"),
     LAP_STEEL("Lap Steel"),
@@ -321,7 +327,31 @@ enum class GuitarType(val displayName: String) {
     UKULELE("Ukulele"),
     MANDOLIN("Mandolin"),
     BANJO("Banjo"),
-    OTHER("Other")
+    OTHER("Other");
+
+    companion object {
+        /** Types offered in UI pickers — excludes legacy construction values. */
+        val selectableEntries = entries.filter { it != SEMI_HOLLOW && it != HOLLOW_BODY }
+    }
+}
+
+/** Body construction — orthogonal to instrument family (GuitarType). */
+@Serializable
+enum class BodyConstruction(val displayName: String) {
+    SOLID_BODY("Solid Body"),
+    CHAMBERED("Chambered"),
+    SEMI_HOLLOW("Semi-Hollow"),
+    HOLLOW_BODY("Hollow Body"),
+    OTHER("Other");
+
+    companion object {
+        /** Map the legacy construction-typed GuitarTypes onto family + construction. */
+        fun fromLegacyGuitarType(type: GuitarType): BodyConstruction? = when (type) {
+            GuitarType.SEMI_HOLLOW -> SEMI_HOLLOW
+            GuitarType.HOLLOW_BODY -> HOLLOW_BODY
+            else -> null
+        }
+    }
 }
 
 @Serializable
@@ -378,7 +408,7 @@ enum class WishlistPriority(val displayName: String, val sortOrder: Int) {
 data class CollectionData(
     val guitars: List<Guitar> = emptyList(),
     val wishlist: List<WishlistItem> = emptyList(),
-    val version: Int = 2,
+    val version: Int = 3,
     val lastModified: Long = System.currentTimeMillis()
 )
 

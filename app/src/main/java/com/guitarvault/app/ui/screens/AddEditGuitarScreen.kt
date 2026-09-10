@@ -208,7 +208,7 @@ fun AddEditGuitarScreen(
                 LabeledTextField("Top Wood", topWood, { topWood = it })
                 LabeledTextField("Back Wood", backWood, { backWood = it })
                 LabeledTextField("Sides Wood", sidesWood, { sidesWood = it })
-                LabeledTextField("Construction", bodyConstruction, { bodyConstruction = it })
+                BodyConstructionDropdown(selected = bodyConstruction, onSelected = { bodyConstruction = it })
                 LabeledTextField("Finish", finish, { finish = it })
                 LabeledTextField("Finish Color", finishColor, { finishColor = it })
                 LabeledNumberField("Weight (kg)", weightStr, { weightStr = it })
@@ -327,8 +327,32 @@ private fun GuitarTypeDropdown(selected: GuitarType, onSelected: (GuitarType) ->
     Box {
         OutlinedButton(onClick = { expanded = true }) { Text("Type: ${selected.displayName}") }
         DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
-            GuitarType.entries.forEach { type ->
+            GuitarType.selectableEntries.forEach { type ->
                 DropdownMenuItem(text = { Text(type.displayName) }, onClick = { onSelected(type); expanded = false })
+            }
+        }
+    }
+}
+
+/**
+ * Body construction dropdown (Solid Body / Chambered / Semi-Hollow / Hollow
+ * Body / Other). Stored as a free String so old data with custom values
+ * round-trips untouched; an unmatched stored value shows as-is and the user
+ * can pick a standard one to replace it.
+ */
+@Composable
+private fun BodyConstructionDropdown(selected: String, onSelected: (String) -> Unit) {
+    var expanded by remember { mutableStateOf(false) }
+    Box {
+        OutlinedButton(onClick = { expanded = true }) {
+            Text("Construction: ${selected.ifBlank { "not set" }}")
+        }
+        DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+            BodyConstruction.entries.forEach { c ->
+                DropdownMenuItem(
+                    text = { Text(c.displayName) },
+                    onClick = { onSelected(c.displayName); expanded = false }
+                )
             }
         }
     }

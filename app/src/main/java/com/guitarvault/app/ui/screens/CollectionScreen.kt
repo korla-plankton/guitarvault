@@ -260,7 +260,7 @@ fun CollectionScreen(
                         DropdownMenuItem(text = { Text("All Types") }, onClick = {
                             viewModel.setFilterType(null); showFilterMenu = false
                         })
-                        GuitarType.entries.forEach { type ->
+                        GuitarType.selectableEntries.forEach { type ->
                             DropdownMenuItem(
                                 text = { Text(type.displayName) },
                                 onClick = { viewModel.setFilterType(type); showFilterMenu = false }
