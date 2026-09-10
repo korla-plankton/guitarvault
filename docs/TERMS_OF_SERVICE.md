@@ -1,6 +1,6 @@
 # Terms of Service for GuitarVault
 
-**Last updated: July 12, 2026**
+**Last updated: September 9, 2026**
 
 ## 1. Acceptance of Terms
 
@@ -37,7 +37,7 @@ The App stores data locally on your device. Data may be lost if:
 - Your device is lost, damaged, or reset
 - The App is removed or the operating system is reinstalled
 
-The App developer is not responsible for data loss. You are encouraged to export backups regularly.
+The App developer is not responsible for data loss. You are encouraged to export backups regularly using the built-in Export feature, which saves your collection and photos as a ZIP file.
 
 ## 4. Use of the App
 

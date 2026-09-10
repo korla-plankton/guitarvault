@@ -1,6 +1,6 @@
 # Privacy Policy for GuitarVault
 
-**Last updated: July 12, 2026**
+**Last updated: September 9, 2026**
 
 GuitarVault is a mobile application that helps guitar collectors manage their collections. This Privacy Policy explains how the app handles your data.
 
@@ -31,10 +31,10 @@ GuitarVault is a mobile application that helps guitar collectors manage their co
 All your data — guitar specs, photos, valuations, and everything else — is stored **entirely on your device** in a local JSON file within the app's private storage area. Your data never leaves your device unless you manually export it.
 
 ### 2.2 No Cloud Sync
-GuitarVault does not use cloud servers, databases, or sync. There is no account system. Your collection exists only on the device where you created it.
+GuitarVault does not use cloud servers, databases, or sync. There is no account system. Your collection exists only on the device where you created it. Android's automatic cloud backup is disabled for this app — your collection data is never silently synced to Google or any other cloud service.
 
 ### 2.3 Backup and Export
-You can export your collection as a JSON file at any time. This export is saved to a location you choose. You are responsible for the security of any exported files.
+You can export your entire collection — data and photos together — as a ZIP file at any time, saved to a location you choose. Imports (merge or replace) always ask for your explicit confirmation first. You are responsible for the security of any exported files.
 
 ### 2.4 On-Device AI Processing
 The app includes ML Kit Subject Segmentation for background removal in photos. This AI processing runs **entirely on your device** — no images are sent to any server for processing. The ML Kit model is downloaded via Google Play services on first use.
@@ -64,7 +64,7 @@ Your data is retained on your device for as long as the app is installed. If you
 ## 6. Your Rights
 
 - **Access**: You can view all your data within the app at any time
-- **Export**: You can export your entire collection as a JSON file
+- **Export**: You can export your entire collection, photos included, as a ZIP file
 - **Delete**: You can delete individual guitars or uninstall the app to remove all data
 - **No account needed**: There is no account to delete because we don't collect account information
 

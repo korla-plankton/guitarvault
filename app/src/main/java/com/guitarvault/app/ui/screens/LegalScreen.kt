@@ -9,6 +9,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import com.guitarvault.app.BuildConfig
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -59,7 +60,7 @@ fun LegalScreen(onBack: () -> Unit) {
             Spacer(modifier = Modifier.height(32.dp))
 
             Text(
-                "GuitarVault v1.0.0\n© 2026 korla-plankton\nAll rights reserved.",
+                "GuitarVault v${BuildConfig.VERSION_NAME}\n© 2026 korla-plankton\nAll rights reserved.",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -68,7 +69,7 @@ fun LegalScreen(onBack: () -> Unit) {
 }
 
 private const val PRIVACY_POLICY = """
-Last updated: July 12, 2026
+Last updated: September 9, 2026
 
 GuitarVault stores all data locally on your device. No personal data is collected, transmitted, or shared with third parties.
 
@@ -82,6 +83,12 @@ DATA YOU ENTER:
 • Guitar specifications, photos, valuations — stored in a local JSON file on your device only
 • Photos captured via camera or pasted from clipboard — stored on your device only
 • No cloud sync — data exists only on the device where created
+• Android cloud backup is disabled: your collection is never automatically synced to Google or any other cloud service
+
+BACKUP & RESTORE:
+• You can export your entire collection, photos included, as a ZIP file to a location you choose — entirely on your initiative
+• Importing a backup replaces or merges into your collection, always with your explicit confirmation
+• You are responsible for the security of any exported files
 
 PERMISSIONS:
 • Camera: Only when you photograph a guitar
@@ -105,13 +112,13 @@ github.com/korla-plankton/guitarvault
 """
 
 private const val TERMS_OF_SERVICE = """
-Last updated: July 12, 2026
+Last updated: September 9, 2026
 
 1. ACCEPTANCE: By using GuitarVault, you agree to these Terms.
 
 2. LICENSE: The App is proprietary. You may install and use it on your personal device. You may not copy, redistribute, reverse engineer, or resell the App.
 
-3. YOUR DATA: You own all data you enter. You are responsible for backups — the App stores data locally and data may be lost if the app is uninstalled or the device is lost.
+3. YOUR DATA: You own all data you enter. You are responsible for backups — the App stores data locally and data may be lost if the app is uninstalled or the device is lost. Use the built-in Export feature to create ZIP backups of your collection and photos.
 
 4. AI PROCESSING: Background removal is on-device and optional. Results may be inaccurate. The developer is not responsible for AI output quality.
 
