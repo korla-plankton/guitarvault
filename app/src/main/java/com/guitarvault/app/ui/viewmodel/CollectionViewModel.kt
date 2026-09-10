@@ -109,15 +109,33 @@ class CollectionViewModel(
     fun getPhotoFile(relativePath: String): java.io.File = repository.getPhotoFile(relativePath)
 
     /**
+     * Cache of decoded base64 photo bytes, keyed by photo id.
+     * Coil identifies ByteArray models by instance, so returning a fresh
+     * decode on every call made it reload (and flicker) on every
+     * recomposition. Decode once per photo; invalidate via content hash
+     * when the base64 changes (e.g. background removal / undo).
+     */
+    private val photoModelCache = object : java.util.LinkedHashMap<String, Pair<Int, ByteArray>>(16, 0.75f, true) {
+        override fun removeEldestEntry(eldest: MutableMap.MutableEntry<String, Pair<Int, ByteArray>>?) = size > 50
+    }
+
+    /**
      * Returns a Coil-loadable model for a GuitarPhoto.
-     * - Base64 photos → decoded ByteArray (Coil supports ByteArray natively)
+     * - Base64 photos → decoded ByteArray (cached, stable across calls)
      * - File photos → File object
      */
     fun getPhotoModel(photo: com.guitarvault.app.data.model.GuitarPhoto?): Any? {
         if (photo == null) return null
         if (photo.base64Data.isNotEmpty()) {
+            // String.hashCode is computed once and cached on the instance
+            val hash = photo.base64Data.hashCode()
+            photoModelCache[photo.id]?.let { (cachedHash, bytes) ->
+                if (cachedHash == hash) return bytes
+            }
             return try {
-                android.util.Base64.decode(photo.base64Data, android.util.Base64.NO_WRAP)
+                val bytes = android.util.Base64.decode(photo.base64Data, android.util.Base64.NO_WRAP)
+                photoModelCache[photo.id] = hash to bytes
+                bytes
             } catch (e: Exception) {
                 null
             }
