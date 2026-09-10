@@ -3,6 +3,8 @@ package com.guitarvault.app.ui.screens
 import android.content.Intent
 import android.net.Uri
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Search
@@ -43,6 +45,13 @@ fun SpecLookupScreen(
     }
 
     val googleUrl = "https://www.google.com/search?tbm=isch&q=${Uri.encode("$query guitar specs")}"
+    val specsUrl = "https://www.google.com/search?q=${Uri.encode(buildString {
+        append(guitar.brand)
+        if (guitar.model.isNotBlank()) append(" ${guitar.model}")
+        if (guitar.subModel.isNotBlank()) append(" ${guitar.subModel}")
+        guitar.year?.let { append(" $it") }
+        append(" specifications")
+    })}"
     val reverbUrl = "https://reverb.com/marketplace?query=${Uri.encode(query)}"
     val ebayUrl = "https://www.ebay.com/sch/i.html?_nkw=${Uri.encode("$query guitar")}"
 
@@ -67,6 +76,7 @@ fun SpecLookupScreen(
             modifier = Modifier
                 .padding(padding)
                 .fillMaxSize()
+                .verticalScroll(rememberScrollState())
                 .padding(24.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
@@ -107,7 +117,17 @@ fun SpecLookupScreen(
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // Google Search
+            // Google Specs Search
+            SearchButton(
+                label = "Search for Specs",
+                subtitle = "Google: spec sheets, reviews, and manufacturer pages",
+                onClick = { openUrl(specsUrl) },
+                modifier = Modifier.fillMaxWidth()
+            )
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            // Google Images Search
             SearchButton(
                 label = "Search for Images",
                 subtitle = "Google Images: identify details, finishes, and hardware visually",

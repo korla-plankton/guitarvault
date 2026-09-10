@@ -78,6 +78,20 @@ fun AddEditGuitarScreen(
     var weightStr by remember { mutableStateOf(existing?.weight?.toString() ?: "") }
     var notes by remember { mutableStateOf(existing?.notes ?: "") }
     var tagsStr by remember { mutableStateOf(existing?.tags?.joinToString(", ") ?: "") }
+    var productionNumber by remember { mutableStateOf(existing?.productionNumber ?: "") }
+    var cutaway by remember { mutableStateOf(existing?.cutaway ?: false) }
+    var batteryType by remember { mutableStateOf(existing?.batteryType ?: "") }
+    var soundholeDiameterStr by remember { mutableStateOf(existing?.soundholeDiameter?.toString() ?: "") }
+    var bracingPattern by remember { mutableStateOf(existing?.bracingPattern ?: "") }
+    var acousticPickup by remember { mutableStateOf(existing?.acousticPickup ?: "") }
+    var stringBrand by remember { mutableStateOf(existing?.stringInfo?.brand ?: "") }
+    var stringModel by remember { mutableStateOf(existing?.stringInfo?.model ?: "") }
+    var stringGauge by remember { mutableStateOf(existing?.stringInfo?.gauge ?: "") }
+    var stringMaterial by remember { mutableStateOf(existing?.stringInfo?.material ?: "") }
+    var caseIncluded by remember { mutableStateOf(existing?.caseIncluded ?: false) }
+    var caseType by remember { mutableStateOf(existing?.caseType ?: "") }
+    var caseBrand by remember { mutableStateOf(existing?.caseBrand ?: "") }
+    var accessoriesStr by remember { mutableStateOf(existing?.accessories?.joinToString(", ") ?: "") }
     var guitarStatus by remember {
         mutableStateOf(
             when {
@@ -127,6 +141,16 @@ fun AddEditGuitarScreen(
                             numberOfStrings = numberOfStringsStr.toIntOrNull() ?: 6,
                             weight = weightStr.toDoubleOrNull(),
                             notes = notes,
+                            productionNumber = productionNumber,
+                            cutaway = cutaway,
+                            batteryType = batteryType,
+                            soundholeDiameter = soundholeDiameterStr.toDoubleOrNull(),
+                            bracingPattern = bracingPattern,
+                            acousticPickup = acousticPickup,
+                            caseIncluded = caseIncluded,
+                            caseType = caseType,
+                            caseBrand = caseBrand,
+                            accessories = accessoriesStr.split(",").map { it.trim() }.filter { it.isNotBlank() },
                             tags = tagsStr.split(",").map { it.trim() }.filter { it.isNotBlank() },
                             status = guitarStatus,
                             isSold = guitarStatus == GuitarStatus.SOLD,
@@ -138,7 +162,11 @@ fun AddEditGuitarScreen(
                             conditionHistory = existing?.conditionHistory ?: emptyList(),
                             maintenanceLog = existing?.maintenanceLog ?: emptyList(),
                             provenance = existing?.provenance ?: emptyList(),
-                            stringInfo = existing?.stringInfo ?: StringInfo()
+                            stringInfo = StringInfo(
+                                brand = stringBrand, model = stringModel,
+                                gauge = stringGauge, material = stringMaterial,
+                                lastChangedDate = existing?.stringInfo?.lastChangedDate
+                            )
                         )
                         if (existing != null) viewModel.updateGuitar(guitar) else viewModel.addGuitar(guitar)
                         onBack()
@@ -165,6 +193,7 @@ fun AddEditGuitarScreen(
                 LabeledNumberField("Year", yearStr, { yearStr = it })
                 LabeledTextField("Serial Number", serialNumber, { serialNumber = it })
                 LabeledTextField("Country of Origin", countryOfOrigin, { countryOfOrigin = it })
+                LabeledTextField("Production Number (limited edition)", productionNumber, { productionNumber = it })
                 GuitarTypeDropdown(selected = guitarType, onSelected = { guitarType = it })
                 HandednessToggle(selected = handedness, onSelected = { handedness = it })
                 StatusPicker(selected = guitarStatus, onSelected = { guitarStatus = it })
@@ -183,6 +212,10 @@ fun AddEditGuitarScreen(
                 LabeledTextField("Finish", finish, { finish = it })
                 LabeledTextField("Finish Color", finishColor, { finishColor = it })
                 LabeledNumberField("Weight (kg)", weightStr, { weightStr = it })
+                Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
+                    Checkbox(checked = cutaway, onCheckedChange = { cutaway = it })
+                    Text("Cutaway")
+                }
             }
             Spacer(modifier = Modifier.height(16.dp))
 
@@ -217,7 +250,19 @@ fun AddEditGuitarScreen(
                 }
                 if (activeElectronics) {
                     LabeledTextField("Onboard Preamp", onboardPreamp, { onboardPreamp = it })
+                    LabeledTextField("Battery Type", batteryType, { batteryType = it }, placeholder = "e.g. 9V, CR2032")
                 }
+            }
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Acoustic-specific
+            if (guitarType == GuitarType.ACOUSTIC || guitarType == GuitarType.CLASSICAL) {
+                SpecSection(title = "Acoustic Details") {
+                    LabeledNumberField("Soundhole Diameter (mm)", soundholeDiameterStr, { soundholeDiameterStr = it })
+                    LabeledTextField("Bracing Pattern", bracingPattern, { bracingPattern = it }, placeholder = "e.g. X-braced, Scalloped X")
+                    LabeledTextField("Acoustic Pickup", acousticPickup, { acousticPickup = it })
+                }
+                Spacer(modifier = Modifier.height(16.dp))
             }
             Spacer(modifier = Modifier.height(16.dp))
 
@@ -231,6 +276,27 @@ fun AddEditGuitarScreen(
                 LabeledTextField("Tremolo Type", tremoloType, { tremoloType = it })
                 LabeledTextField("Hardware Finish", hardwareFinish, { hardwareFinish = it })
                 LabeledTextField("Pickguard", pickguard, { pickguard = it })
+            }
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Strings
+            SpecSection(title = "Strings") {
+                LabeledTextField("String Brand", stringBrand, { stringBrand = it })
+                LabeledTextField("String Model", stringModel, { stringModel = it })
+                LabeledTextField("Gauge", stringGauge, { stringGauge = it }, placeholder = "e.g. 10-46")
+                LabeledTextField("Material", stringMaterial, { stringMaterial = it }, placeholder = "e.g. nickel wound, phosphor bronze")
+            }
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Case & Accessories
+            SpecSection(title = "Case & Accessories") {
+                Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
+                    Checkbox(checked = caseIncluded, onCheckedChange = { caseIncluded = it })
+                    Text("Case Included")
+                }
+                LabeledTextField("Case Type", caseType, { caseType = it }, placeholder = "hard, soft, gig bag")
+                LabeledTextField("Case Brand", caseBrand, { caseBrand = it })
+                LabeledTextField("Accessories (comma-separated)", accessoriesStr, { accessoriesStr = it })
             }
             Spacer(modifier = Modifier.height(16.dp))
 
