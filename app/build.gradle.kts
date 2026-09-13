@@ -14,8 +14,8 @@ android {
         applicationId = "com.planktone.guitarvault"
         minSdk = 31          // Android 12 — required for ML Kit Subject Segmentation
         targetSdk = 36       // Android 16
-        versionCode = 7
-        versionName = "1.2.4"
+        versionCode = 8
+        versionName = "1.2.5"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables { useSupportLibrary = true }
     }
