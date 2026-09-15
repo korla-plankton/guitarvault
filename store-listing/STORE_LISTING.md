@@ -50,7 +50,7 @@ Unified status tabs with live counts let you manage guitars you own, want, and h
 Material You dynamic colour with a theme selector — follow the system, or lock light or dark mode.
 
 🔒 100% PRIVATE
-All data stays on your device. No accounts, no cloud sync, no analytics, no ads, no tracking — Android's automatic cloud backup is disabled too. Your collection never leaves your phone unless you export it yourself.
+All data stays on your device. No accounts, no cloud sync, no analytics, no ads, no tracking — Google cloud backup stays off unless you opt in yourself. Your collection never leaves your phone unless you export it.
 
 KEY FEATURES:
 • 60+ specification fields plus custom user-defined fields
@@ -67,7 +67,7 @@ KEY FEATURES:
 • ZIP backup export with photos; merge or replace import
 • List, grouped and grid views; sort by name, brand, year, value, purchase date
 • Light / dark / system theme with Material You colour
-• 100% local and private — no cloud, no account, no ads
+• 100% local and private — no cloud, no account, no ads; optional Google backup, off by default
 ```
 
 ## What's New (release notes — see each version's notes)

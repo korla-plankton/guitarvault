@@ -30,8 +30,8 @@ GuitarVault is a mobile application that helps guitar collectors manage their co
 ### 2.1 Local Storage
 All your data — guitar specs, photos, valuations, and everything else — is stored **entirely on your device** in a local JSON file within the app's private storage area. Your data never leaves your device unless you manually export it.
 
-### 2.2 No Cloud Sync
-GuitarVault does not use cloud servers, databases, or sync. There is no account system. Your collection exists only on the device where you created it. Android's automatic cloud backup is disabled for this app — your collection data is never silently synced to Google or any other cloud service.
+### 2.2 No Cloud Sync (By Default)
+GuitarVault does not use cloud servers, databases, or sync. There is no account system. Your collection exists only on the device where you created it. Android's automatic cloud backup is **disabled by default** — nothing is uploaded to Google unless you explicitly enable the optional "Google Backup" toggle in the app's ⋮ menu. If you enable it, your app data (collection file and photos) may be backed up to your personal Google account, subject to Google's privacy policy; you can disable it again at any time.
 
 ### 2.3 Backup and Export
 You can export your entire collection — data and photos together — as a ZIP file at any time, saved to a location you choose. Imports (merge or replace) always ask for your explicit confirmation first. You are responsible for the security of any exported files.
