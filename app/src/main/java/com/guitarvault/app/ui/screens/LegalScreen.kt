@@ -69,7 +69,7 @@ fun LegalScreen(onBack: () -> Unit) {
 }
 
 private const val PRIVACY_POLICY = """
-Last updated: September 9, 2026
+Last updated: September 15, 2026
 
 GuitarVault stores all data locally on your device. No personal data is collected, transmitted, or shared with third parties.
 
@@ -97,7 +97,7 @@ PERMISSIONS:
 • Foreground Service: AI background removal processing only
 
 ON-DEVICE AI:
-Background removal runs entirely on your device via ML Kit. No images are sent to any server.
+Background removal runs entirely on your device via ML Kit. No images are sent to any server. This feature has specific hardware requirements and is not available on all devices — where unsupported, background removal will not function but all other features are unaffected.
 
 DATA RETENTION:
 Data is retained until you uninstall the app. Uninstalling permanently deletes all data.

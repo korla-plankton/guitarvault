@@ -1,6 +1,6 @@
 # Privacy Policy for GuitarVault
 
-**Last updated: September 9, 2026**
+**Last updated: September 15, 2026**
 
 GuitarVault is a mobile application that helps guitar collectors manage their collections. This Privacy Policy explains how the app handles your data.
 
@@ -38,6 +38,8 @@ You can export your entire collection — data and photos together — as a ZIP 
 
 ### 2.4 On-Device AI Processing
 The app includes ML Kit Subject Segmentation for background removal in photos. This AI processing runs **entirely on your device** — no images are sent to any server for processing. The ML Kit model is downloaded via Google Play services on first use.
+
+Note that this feature has specific hardware requirements: subject segmentation relies on the device's hardware acceleration and Google Play services support, and is not available on all devices. Where the required hardware is absent, background removal will not function — all other app features are unaffected, and no image data leaves your device in either case.
 
 ## 3. Data Permissions
 
