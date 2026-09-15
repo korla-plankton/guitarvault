@@ -307,38 +307,6 @@ fun CollectionScreen(
                             )
                         }
                         HorizontalDivider()
-                        // Google Auto Backup opt-in — OFF by default; nothing is
-                        // uploaded unless the user enables it here (gated in
-                        // GuitarVaultBackupAgent.onFullBackup).
-                        val backupPrefs = context.getSharedPreferences(
-                            com.guitarvault.app.GuitarVaultBackupAgent.PREFS_NAME,
-                            android.content.Context.MODE_PRIVATE
-                        )
-                        var googleBackupEnabled by remember {
-                            mutableStateOf(backupPrefs.getBoolean(com.guitarvault.app.GuitarVaultBackupAgent.KEY_ENABLED, false))
-                        }
-                        DropdownMenuItem(
-                            leadingIcon = {
-                                Icon(
-                                    if (googleBackupEnabled) Icons.Default.CloudDone else Icons.Default.CloudOff,
-                                    contentDescription = null
-                                )
-                            },
-                            text = { Text(if (googleBackupEnabled) "Google Backup: On" else "Google Backup: Off") },
-                            onClick = {
-                                googleBackupEnabled = !googleBackupEnabled
-                                backupPrefs.edit().putBoolean(
-                                    com.guitarvault.app.GuitarVaultBackupAgent.KEY_ENABLED,
-                                    googleBackupEnabled
-                                ).apply()
-                                showExportMenu = false
-                                exportStatus = if (googleBackupEnabled)
-                                    "☁️ Google Backup enabled — your collection may be backed up to your Google account"
-                                else
-                                    "☁️ Google Backup disabled — no data will leave this device"
-                            }
-                        )
-                        HorizontalDivider()
                         DropdownMenuItem(
                             text = { Text("📤 Export Collection (ZIP)") },
                             onClick = {

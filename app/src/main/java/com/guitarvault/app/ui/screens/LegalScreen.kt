@@ -83,7 +83,7 @@ DATA YOU ENTER:
 • Guitar specifications, photos, valuations — stored in a local JSON file on your device only
 • Photos captured via camera or pasted from clipboard — stored on your device only
 • No cloud sync — data exists only on the device where created
-• Android cloud backup is OFF by default: nothing is uploaded to Google unless you explicitly enable "Google Backup" in the app's menu
+• Android cloud backup is disabled: your collection is never automatically synced to Google or any other cloud service
 
 BACKUP & RESTORE:
 • You can export your entire collection, photos included, as a ZIP file to a location you choose — entirely on your initiative
